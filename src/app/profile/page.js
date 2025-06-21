@@ -3,17 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../context/AuthContext';
-import profileService from '../../services/profileService';
+import { useAuth } from '@/context/AuthContext';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 
 export default function ProfileForm() {
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
+  const { register, handleSubmit, setValue, formState: { errors }, reset } = useForm();
   const { user, isAuthenticated, loading, hasProfile } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [step, setStep] = useState(1);
-  const [totalSteps] = useState(3);
+  const [existingProfile, setExistingProfile] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,47 +24,34 @@ export default function ProfileForm() {
     }
 
     // Fetch existing profile if available
-    if (isAuthenticated && user) {
+    if (isAuthenticated) {
       const fetchProfile = async () => {
         try {
-          const profileData = await profileService.getProfile();
+          const token = Cookies.get('token') || '';
+          const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/profile`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
           
-          if (profileData.profile) {
-            // Set form values for all profile fields
-            const profile = profileData.profile;
-            
-            // Basic info
-            setValue('name', profile.name);
-            setValue('gender', profile.gender);
-            setValue('phone_number', profile.phone_number);
-            setValue('date_of_birth', profile.date_of_birth ? profile.date_of_birth.substring(0, 10) : ''); // Format as YYYY-MM-DD
-            setValue('location', profile.location);
-            
-            // Medical info
-            setValue('blood_group', profile.blood_group);
-            setValue('height_cm', profile.height_cm);
-            setValue('weight_kg', profile.weight_kg);
-            setValue('marital_status', profile.marital_status);
-            
-            // Health data
-            if (profile.allergies && Array.isArray(profile.allergies)) {
-              setValue('allergies', profile.allergies.join(', '));
-            }
-            if (profile.chronic_conditions && Array.isArray(profile.chronic_conditions)) {
-              setValue('chronic_conditions', profile.chronic_conditions.join(', '));
-            }
-            if (profile.current_medications && Array.isArray(profile.current_medications)) {
-              setValue('current_medications', profile.current_medications.join(', '));
-            }
+          if (response.data.profile) {
+            setExistingProfile(response.data.profile);
+            // Set form values
+            Object.entries(response.data.profile).forEach(([key, value]) => {
+              if (value !== null && key !== 'id' && key !== 'userId' && key !== 'createdAt' && key !== 'updatedAt') {
+                setValue(key, value);
+              }
+            });
           }
         } catch (err) {
-          console.error('Error fetching profile:', err);
+          // No profile yet or error, that's okay
+          console.log('No existing profile found');
         }
       };
       
       fetchProfile();
     }
-  }, [isAuthenticated, loading, router, setValue, user]);
+  }, [isAuthenticated, loading, router, setValue]);
 
   const onSubmit = async (data) => {
     setSubmitting(true);
@@ -72,16 +59,15 @@ export default function ProfileForm() {
     setSuccess('');
 
     try {
-      // Format arrays from comma-separated strings
-      const formattedData = {
-        ...data,
-        allergies: data.allergies ? data.allergies.split(',').map(item => item.trim()) : [],
-        chronic_conditions: data.chronic_conditions ? data.chronic_conditions.split(',').map(item => item.trim()) : [],
-        current_medications: data.current_medications ? data.current_medications.split(',').map(item => item.trim()) : [],
-      };
-
-      await profileService.updateProfile(formattedData);
+      const token = Cookies.get('token') || '';
+      await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/profile`, data, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       setSuccess('Profile updated successfully!');
+      setExistingProfile(data);
       
       // Redirect to dashboard after submission
       setTimeout(() => {
@@ -92,14 +78,6 @@ export default function ProfileForm() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const nextStep = () => {
-    setStep(current => Math.min(current + 1, totalSteps));
-  };
-  
-  const prevStep = () => {
-    setStep(current => Math.max(current - 1, 1));
   };
 
   if (loading) {
@@ -122,29 +100,6 @@ export default function ProfileForm() {
             <p className="text-gray-600">
               Please provide your health information to help us serve you better
             </p>
-            
-            {/* Step indicator */}
-            <div className="flex justify-center items-center mt-6">
-              <div className="flex items-center">
-                {Array.from({ length: totalSteps }).map((_, idx) => (
-                  <div key={idx} className="flex items-center">
-                    <div 
-                      className={`rounded-full h-8 w-8 flex items-center justify-center border-2 
-                        ${step > idx ? 'bg-blue-600 text-white border-blue-600' : 
-                          step === idx + 1 ? 'border-blue-600 text-blue-600' : 'border-gray-300 text-gray-400'}`}
-                    >
-                      {idx + 1}
-                    </div>
-                    {idx < totalSteps - 1 && (
-                      <div 
-                        className={`h-1 w-10 mx-1 
-                        ${step > idx + 1 ? 'bg-blue-600' : 'bg-gray-300'}`}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           {error && (
