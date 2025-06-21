@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useAuth } from '@/context/AuthContext';
-import AuthLayout from '@/components/AuthLayout';
+import { useAuth } from '../../context/AuthContext';
+import AuthLayout from '../../components/AuthLayout';
 
 export default function Signup() {
   const { register, handleSubmit, formState: { errors }, watch } = useForm();

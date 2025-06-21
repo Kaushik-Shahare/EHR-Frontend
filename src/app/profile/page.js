@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import profileService from '@/services/profileService';
+import { useAuth } from '../../context/AuthContext';
+import profileService from '../../services/profileService';
 
 export default function ProfileForm() {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm();
@@ -357,7 +357,8 @@ export default function ProfileForm() {
                 disabled={submitting}
                 className="ml-3 inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-70"
               >
-                {submitting ? 'Saving...' : (existingProfile ? 'Update Profile' : 'Save Profile')}
+                {/* {submitting ? 'Saving...' : (existingProfile ? 'Update Profile' : 'Save Profile')} */}
+                Submit  
               </button>
             </div>
           </form>

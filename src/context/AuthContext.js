@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useState, useEffect, useContext } from 'react';
-import authService from '@/services/authService';
+import authService from '../services/authService';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 
@@ -76,12 +76,14 @@ export const AuthProvider = ({ children }) => {
       setUser(res.user);
       setHasProfile(res.hasProfile);
       setLoading(false);
-      
+      console.log('User logged in:', res.user.user_type);
       // Redirect based on profile status
-      if (res.hasProfile) {
+      if (res.user.user_type === 'Doctor') {
         router.push('/dashboard');
-      } else {
+      } else if (res.user.user_type === 'Patient') {
         router.push('/profile');
+      }else{
+        router.push('/admin/dashboard'); // Default redirect
       }
       return true;
     } catch (err) {

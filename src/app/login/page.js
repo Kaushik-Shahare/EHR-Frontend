@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useAuth } from '@/context/AuthContext';
-import AuthLayout from '@/components/AuthLayout';
+import { useAuth } from '../../context/AuthContext';
+import AuthLayout from '../../components/AuthLayout';
 
 export default function Login() {
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -69,7 +69,7 @@ export default function Login() {
             {...register('password', {
               required: 'Password is required',
               minLength: {
-                value: 6,
+                value: 4,
                 message: 'Password must be at least 6 characters'
               }
             })}

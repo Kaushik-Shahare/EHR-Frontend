@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import MainLayout from '@/components/MainLayout';
+import MainLayout from '../../components/MainLayout';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
 import Cookies from 'js-cookie';

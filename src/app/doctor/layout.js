@@ -1,6 +1,6 @@
 "use client";
 
-import SidebarLayout from "@/components/layout/SidebarLayout";
+import SidebarLayout from "../../components/layout/SidebarLayout";
 
 
 export default function DoctorLayout({
