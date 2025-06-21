@@ -1,9 +1,9 @@
 'use client';
 
 import { createContext, useState, useEffect, useContext } from 'react';
-import authService from '@/services/authService';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
+import authService from '@/services/authService';
 
 const AuthContext = createContext();
 

@@ -27,12 +27,7 @@ export const SidebarLayout = ({ children }) => {
   const navigationLinks = [
     { name: 'Dashboard', href: '/doctor', icon: <FaHome size={18} /> },
     { name: 'Patients', href: '/doctor/patients', icon: <FaUserInjured size={18} /> },
-    // { name: 'Messages', href: '/doctor/messages', icon: <FaCommentDots size={18} /> },
     { name: 'Schedule', href: '/doctor/schedule', icon: <FaCalendarAlt size={18} /> },
-    // { name: 'Teams', href: '/doctor/teams', icon: <FaUsers size={18} /> },
-    // { name: 'Medical Records', href: '/doctor/records', icon: <FaFileMedical size={18} /> },
-    // { name: 'Reports', href: '/doctor/reports', icon: <FaChartBar size={18} /> },
-    // { name: 'Billing & Payments', href: '/doctor/billing', icon: <FaFileInvoiceDollar size={18} /> },
   ];
 
   // Utility links at the bottom
