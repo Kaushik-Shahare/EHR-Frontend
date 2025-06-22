@@ -23,7 +23,7 @@ export const RecordProvider = ({ children }) => {
 
   // Helper function to create API request config with auth
   const getAuthConfig = () => {
-    const token = Cookies.get('token');
+    const token = localStorage.getItem('token') || Cookies.get('token');
     return {
       headers: {
         Authorization: `Bearer ${token}`

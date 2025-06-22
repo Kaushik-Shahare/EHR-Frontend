@@ -22,7 +22,7 @@ export default function PatientsPage() {
 
   // Get auth config for API requests
   const getAuthConfig = () => {
-    const token = Cookies.get('token');
+    const token = localStorage.getItem('token') || Cookies.get('token');
     return {
       headers: {
         Authorization: `Bearer ${token}`

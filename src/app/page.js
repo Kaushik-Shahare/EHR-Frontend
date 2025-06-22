@@ -1,132 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '';
-import { Box } from '@/components/ui/Box';
+import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import Box from '@/components/Box';
+import Navbar from '@/components/Navbar';
 
 export default function LandingPage() {
   const router = useRouter();
   const { isAuthenticated, loading, hasProfile } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  // Function to handle navigation based on auth status
-  const navigateToDashboard = () => {
-    if (isAuthenticated) {
-      // If the user is authenticated, redirect to dashboard or profile
-      if (hasProfile) {
-        router.push('/dashboard');
-      } else {
-        router.push('/profile');
-      }
-    } else {
-      // If not authenticated, redirect to login
-      router.push('/login');
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Navigation */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <span className="text-2xl font-bold text-blue-600">HealthRecord</span>
-            </div>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/" className="text-gray-700 hover:text-blue-600 font-medium">
-                Home
-              </Link>
-              <Link href="#features" className="text-gray-700 hover:text-blue-600 font-medium">
-                Features
-              </Link>
-              <Link href="#about" className="text-gray-700 hover:text-blue-600 font-medium">
-                About Us
-              </Link>
-              <Link href="#contact" className="text-gray-700 hover:text-blue-600 font-medium">
-                Contact
-              </Link>
-              {isAuthenticated ? (
-                <button 
-                  onClick={navigateToDashboard}
-                  className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-                >
-                  Dashboard
-                </button>
-              ) : (
-                <div className="flex space-x-4">
-                  <Link 
-                    href="/login" 
-                    className="px-4 py-2 rounded-md border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium transition-colors"
-                  >
-                    Login
-                  </Link>
-                  <Link 
-                    href="/signup" 
-                    className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              )}
-            </nav>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden flex items-center">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 rounded-md text-gray-600 hover:bg-gray-100"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden shadow-md">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <Link href="/" className="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100">
-                Home
-              </Link>
-              <Link href="#features" className="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100">
-                Features
-              </Link>
-              <Link href="#about" className="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100">
-                About Us
-              </Link>
-              <Link href="#contact" className="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100">
-                Contact
-              </Link>
-              {isAuthenticated ? (
-                <button 
-                  onClick={navigateToDashboard}
-                  className="block w-full text-left px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100"
-                >
-                  Dashboard
-                </button>
-              ) : (
-                <>
-                  <Link href="/login" className="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100">
-                    Login
-                  </Link>
-                  <Link href="/signup" className="block px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100">
-                    Sign Up
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </header>
-
+      {/* Navbar */}
+      <Navbar />
+      
       {/* Hero Section */}
       <section className="pt-16 pb-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">

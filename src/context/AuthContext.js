@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check if user is logged in
-    const token = Cookies.get('token');
+    const token = localStorage.getItem('token') || Cookies.get('token');
     if (token) {
       loadUser(token);
     } else {
@@ -27,18 +27,24 @@ export const AuthProvider = ({ children }) => {
   // Load user data with the token
   const loadUser = async (token) => {
     try {
+      console.log('AuthContext: Loading user data with token');
       // Use real API service
       const res = await authService.loadUser();
+      console.log('AuthContext: User data loaded successfully', res);
       setUser(res.user);
       setHasProfile(res.hasProfile);
       setLoading(false);
     } catch (err) {
-      Cookies.remove('token');
+      console.error('AuthContext: Failed to load user data', err);
+      // Clean up any invalid tokens
       localStorage.removeItem('token');
+      Cookies.remove('token');
       localStorage.removeItem('refreshToken');
+      
       setUser(null);
+      setHasProfile(false);
       setLoading(false);
-      setError('Authentication failed. Please log in again.');
+      setError(err.message || 'Authentication failed. Please log in again.');
     }
   };
 
