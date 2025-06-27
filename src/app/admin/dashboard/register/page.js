@@ -16,6 +16,7 @@ export default function HospitalDashboard() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const { patient } = useUser();
   const [doctors, setDoctors] = useState([]);
+  const [selectDoctor, setSelectDoctor] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [registeredPatientData, setRegisteredPatientData] = useState(null);
   const [formData, setFormData] = useState({
@@ -122,7 +123,7 @@ export default function HospitalDashboard() {
     }
   }, [patient]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit =async (e) => {
     e.preventDefault();
     const newPatient = {
       id: Date.now().toString(),
@@ -167,21 +168,23 @@ export default function HospitalDashboard() {
       reason: "",
     });
     const token = localStorage.getItem("session_token");
-    if(token ){
-      console.log("Token found:", token);
-    }
-    const res = createVisit({
+    // if(!token ){
+    //   console.log("Token found:", token);
+    // }
+    console.log("Form Data to be sent:============================", doctors[0].id);
+    const res = await createVisit({
       patient: patient.id,
-      attending_doctor: formData.doctor.id,
+      attending_doctor: doctors[0].id,
       visit_type: formData.reason,
       reason_for_visit: formData.reason,
       session_token: token
     })
     
-    if(res){
+    // if(res){
 
-      alert("Patient registered successfully!");
-    }
+    //   alert("Patient registered successfully!");
+    //   window.location.href = "/admin/dashboard";
+    // }
   };
 
   const filteredPatients = patients.filter(
@@ -610,110 +613,110 @@ export default function HospitalDashboard() {
               </div>
 
               {/* Insurance Information Section */}
-              <div className="border-b border-gray-200 pb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Insurance Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Insurance Provider
-                    </label>
-                    <input
-                      type="text"
-                      name="insuranceProvider"
-                      value={formData.insuranceProvider}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="Star Health Insurance"
-                    />
-                  </div>
+                      <div className="border-b border-gray-200 pb-6">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                        Insurance Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Insurance Provider
+                        </label>
+                        <input
+                          type="text"
+                          name="insuranceProvider"
+                          value={formData.insuranceProvider}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          placeholder="Star Health Insurance"
+                        />
+                        </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Policy Number
-                    </label>
-                    <input
-                      type="text"
-                      name="policyNumber"
-                      value={formData.policyNumber}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="STH12345678"
-                    />
-                  </div>
-                </div>
-              </div>
+                        <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Policy Number
+                        </label>
+                        <input
+                          type="text"
+                          name="policyNumber"
+                          value={formData.policyNumber}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          placeholder="STH12345678"
+                        />
+                        </div>
+                      </div>
+                      </div>
 
-              <div className="pt-12">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Appointment Scheduling
-                </h3>
+                      <div className="pt-12">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                        Appointment Scheduling
+                      </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select Doctor *
-                    </label>
-                    <select
-                      name="doctor"
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Select Doctor *
+                        </label>
+                        <select
+                          name="doctor"
                       value={formData.doctor}
                       onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    >
-                      <option value="">Choose a doctor</option>
-                      {doctors.map((doctor) => (
-                        <option key={doctor.profile.id} value={doctor.profile.id}>
-                          {doctor.profile.name} 
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Choose a doctor</option>
+                          {doctors.map((doctor) => (
+                          <option key={doctor.profile.id} value={doctor.profile.id}>
+                            {doctor.profile.name} 
+                          </option>
+                          ))}
+                        </select>
+                        </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Appointment Date *
-                    </label>
-                    <input
-                      type="date"
-                      name="appointmentDate"
-                      value={formData.appointmentDate}
-                      onChange={handleInputChange}
-                      required
-                      min={new Date().toISOString().split("T")[0]}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    />
-                  </div>
+                        <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Appointment Date *
+                        </label>
+                        <input
+                          type="date"
+                          name="appointmentDate"
+                          value={formData.appointmentDate}
+                          onChange={handleInputChange}
+                          required
+                          min={new Date().toISOString().split("T")[0]}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        />
+                        </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Visit Type *
-                    </label>
-                    <select
-                      name="reason"
-                      value={formData.reason}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    >
-                      <option value="">Select visit type</option>
-                      <option value="emergency">Emergency</option>
-                      <option value="outpatient">Outpatient</option>
-                      <option value="inpatient">Inpatient</option>
-                      <option value="followup">Follow-up</option>
-                      <option value="routine_checkup">Routine Checkup</option>
-                      <option value="specialist_consultation">Specialist Consultation</option>
-                    </select>
-                  </div>
-                  </div>
-                  </div>
+                        <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Visit Type *
+                        </label>
+                        <select
+                          name="reason"
+                          value={formData.reason}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select visit type</option>
+                          <option value="emergency">Emergency</option>
+                          <option value="outpatient">Outpatient</option>
+                          <option value="inpatient">Inpatient</option>
+                          <option value="followup">Follow-up</option>
+                          <option value="routine_checkup">Routine Checkup</option>
+                          <option value="specialist_consultation">Specialist Consultation</option>
+                        </select>
+                        </div>
+                        </div>
+                        </div>
 
-                  <div className="flex justify-end space-x-4 pt-6">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData({
+                        <div className="flex justify-end space-x-4 pt-6">
+                        <button
+                          type="button"
+                          onClick={() =>
+                          setFormData({
                       // Basic Information
                       name: "",
                       email: "",
