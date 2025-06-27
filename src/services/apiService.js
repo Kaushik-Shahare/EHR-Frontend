@@ -19,7 +19,7 @@ api.interceptors.request.use(
     // Get token from cookie first, then fallback to localStorage
 
     // Get token from localStorage first, then fallback to cookies for consistency
-    const token = localStorage.getItem('token') || Cookies.get('token');
+    const token = localStorage.getItem('accesstoken') || Cookies.get('token');
     
     // Log for debugging purposes (remove in production)
     console.log(`API Request to: ${config.url}`);
@@ -82,4 +82,24 @@ export const NfcGetdocuments = async (data) => {
   }
 };
 
+
+export const getDoctors = async () => {
+  try {
+    const response = await api.get('/api/auth/doctors/');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching doctors:', error);
+    throw error.response?.data || { message: 'Failed to fetch doctors' };
+  }
+};
+
+export const createVisit= async (data) => {
+  try {
+    const response = await api.post('/api/ehr/patient-visits/', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating visit:', error);
+    throw error.response?.data || { message: 'Failed to create visit' };
+  }
+};
 export default api;

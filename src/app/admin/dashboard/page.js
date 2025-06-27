@@ -1,212 +1,106 @@
-"use client";
+'use client';
 
-import { use, useEffect, useState } from "react";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-import PatientCheckIn from "@/components/PatientCheckIn";
-import { type } from "os";
-import { useUser } from "@/context/UserContext";
-
-const doctors = [
-  {
-    id: "1",
-    name: "Dr. Sarah Johnson",
-    specialty: "General Medicine",
-    availableSlots: ["09:00", "10:00", "11:00", "14:00", "15:00"],
-  },
-  {
-    id: "2",
-    name: "Dr. Michael Chen",
-    specialty: "Cardiology",
-    availableSlots: ["08:00", "09:30", "11:00", "13:30", "15:30"],
-  },
-  {
-    id: "3",
-    name: "Dr. Emily Rodriguez",
-    specialty: "Pediatrics",
-    availableSlots: ["09:00", "10:30", "13:00", "14:30", "16:00"],
-  },
-  {
-    id: "4",
-    name: "Dr. David Thompson",
-    specialty: "Orthopedics",
-    availableSlots: ["08:30", "10:00", "11:30", "14:00", "15:30"],
-  },
-];
-
-export default function HospitalDashboard() {
-  const [activeTab, setActiveTab] = useState("register");
+export default function AdminDashboard() {
+  const router = useRouter();
   const [patients, setPatients] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPatient, setSelectedPatient] = useState(null);
-  const { patient } = useUser();
-  const [formData, setFormData] = useState({
-    // Basic Information
-    name: "",
-    email: "",
-    phone: "",
-    dateOfBirth: "",
-    age: "",
-    gender: "",
-    location: "",
-    bloodGroup: "",
-    heightCm: "",
-    weightKg: "",
-    maritalStatus: "",
-    
-    // Address Information
-    street: "",
-    area: "",
-    city: "",
-    state: "",
-    pincode: "",
-    country: "",
-    
-    // Emergency Contact
-    emergencyContactName: "",
-    emergencyContactRelation: "",
-    emergencyContactPhone: "",
-    
-    // Insurance
-    insuranceProvider: "",
-    policyNumber: "",
-    
-    // Appointment Information
-    appointmentDate: "",
-    appointmentTime: "",
-    doctor: "",
-    reason: "",
-  });
+  const [loading, setLoading] = useState(true);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => {
-      const newData = { ...prev, [name]: value };
-      
-      // Auto-calculate age when date of birth changes
-      if (name === 'dateOfBirth' && value) {
-        const today = new Date();
-        const birthDate = new Date(value);
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
+  // Mock patient data - replace with actual API call
+  useEffect(() => {
+    // Simulate API call
+    setTimeout(() => {
+      setPatients([
+        {
+          id: 1,
+          patientId: 'P001',
+          name: 'John Doe',
+          age: 45,
+          gender: 'Male',
+          admissionDate: '2025-06-25',
+          department: 'Cardiology',
+          doctor: 'Dr. Smith',
+          status: 'Admitted',
+          room: 'A-101'
+        },
+        {
+          id: 2,
+          patientId: 'P002',
+          name: 'Jane Smith',
+          age: 32,
+          gender: 'Female',
+          admissionDate: '2025-06-24',
+          department: 'Orthopedics',
+          doctor: 'Dr. Johnson',
+          status: 'Admitted',
+          room: 'B-205'
+        },
+        {
+          id: 3,
+          patientId: 'P003',
+          name: 'Robert Wilson',
+          age: 58,
+          gender: 'Male',
+          admissionDate: '2025-06-23',
+          department: 'Neurology',
+          doctor: 'Dr. Brown',
+          status: 'Admitted',
+          room: 'C-302'
+        },
+        {
+          id: 4,
+          patientId: 'P004',
+          name: 'Emily Davis',
+          age: 28,
+          gender: 'Female',
+          admissionDate: '2025-06-26',
+          department: 'Pediatrics',
+          doctor: 'Dr. Anderson',
+          status: 'Admitted',
+          room: 'D-108'
+        },
+        {
+          id: 5,
+          patientId: 'P005',
+          name: 'Michael Brown',
+          age: 67,
+          gender: 'Male',
+          admissionDate: '2025-06-22',
+          department: 'General Medicine',
+          doctor: 'Dr. Wilson',
+          status: 'Admitted',
+          room: 'A-205'
         }
-        
-        newData.age = age.toString();
-      }
-      
-      return newData;
-    });
-  };
-
-  // Prefill form when patient data is available
-  useEffect(() => {
-    if (patient && patient.profile) {
-      const profile = patient.profile;
-      setFormData(prev => ({
-        ...prev,
-        // Basic Information
-        name: profile.name || "",
-        email: profile.email || "",
-        phone: profile.phone_number || "",
-        dateOfBirth: profile.date_of_birth || "",
-        age: profile.age?.toString() || "",
-        gender: profile.gender || "",
-        location: profile.location || "",
-        bloodGroup: profile.blood_group || "",
-        heightCm: profile.height_cm?.toString() || "",
-        weightKg: profile.weight_kg?.toString() || "",
-        maritalStatus: profile.marital_status || "",
-        
-        // Address Information
-        street: profile.address?.street || "",
-        area: profile.address?.area || "",
-        city: profile.address?.city || "",
-        state: profile.address?.state || "",
-        pincode: profile.address?.pincode || "",
-        country: profile.address?.country || "",
-        
-        // Emergency Contact
-        emergencyContactName: profile.emergency_contact?.name || "",
-        emergencyContactRelation: profile.emergency_contact?.relation || "",
-        emergencyContactPhone: profile.emergency_contact?.phone_number || "",
-        
-        // Insurance
-        insuranceProvider: profile.insurance?.provider || "",
-        policyNumber: profile.insurance?.policy_number || "",
-      }));
-    }
-  }, [patient]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const newPatient = {
-      id: Date.now().toString(),
-      ...formData,
-    };
-    setPatients((prev) => [...prev, newPatient]);
-    setFormData({
-      // Basic Information
-      name: "",
-      email: "",
-      phone: "",
-      dateOfBirth: "",
-      age: "",
-      gender: "",
-      location: "",
-      bloodGroup: "",
-      heightCm: "",
-      weightKg: "",
-      maritalStatus: "",
-      
-      // Address Information
-      street: "",
-      area: "",
-      city: "",
-      state: "",
-      pincode: "",
-      country: "",
-      
-      // Emergency Contact
-      emergencyContactName: "",
-      emergencyContactRelation: "",
-      emergencyContactPhone: "",
-      
-      // Insurance
-      insuranceProvider: "",
-      policyNumber: "",
-      
-      // Appointment Information
-      appointmentDate: "",
-      appointmentTime: "",
-      doctor: "",
-      reason: "",
-    });
-    console.log("New patient registered:", newPatient);
-    
-    alert("Patient registered successfully!");
-  };
-
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.phone.includes(searchTerm)
-  );
-
-  const selectedDoctor = doctors.find((doc) => doc.id === formData.doctor);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // Check if the user is logged in
-      const token = localStorage.getItem("accesstoken");
-      if (!token) {
-        // Redirect to login page if not logged in
-        window.location.href = "/login";
-      }
-    }
+      ]);
+      setLoading(false);
+    }, 1000);
   }, []);
+
+  const handleAddPatient = () => {
+    router.push('/admin/dashboard/register');
+  };
+
+  const handleLogout = () => {
+    // Implement logout logic
+    router.push('/login');
+  };
+
+  const getStatusBadge = (status) => {
+    const statusColors = {
+      'Admitted': 'bg-green-100 text-green-800',
+      'Discharged': 'bg-blue-100 text-blue-800',
+      'Critical': 'bg-red-100 text-red-800',
+      'Stable': 'bg-yellow-100 text-yellow-800'
+    };
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status}
+      </span>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -221,653 +115,214 @@ export default function HospitalDashboard() {
                 </div>
                 <span className="text-xl font-semibold">MediCare Hospital</span>
               </div>
-              {/* <nav className="flex space-x-6">
-                <button
-                  onClick={() => setActiveTab("register")}
-                  className={`px-4 py-2 rounded-md transition-colors ${
-                    activeTab === "register" ? "bg-orange-500 text-white" : "hover:bg-teal-700"
-                  }`}
-                >
-                  Patient Registration
-                </button>
-                <button
-                  onClick={() => setActiveTab("schedule")}
-                  className={`px-4 py-2 rounded-md transition-colors ${
-                    activeTab === "schedule" ? "bg-orange-500 text-white" : "hover:bg-teal-700"
-                  }`}
-                >
-                  Schedule Management
-                </button>
-                <button
-                  onClick={() => setActiveTab("patients")}
-                  className={`px-4 py-2 rounded-md transition-colors ${
-                    activeTab === "patients" ? "bg-orange-500 text-white" : "hover:bg-teal-700"
-                  }`}
-                >
-                  Patient Records
-                </button>
-              </nav> */}
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm">Reception Desk</span>
+              <span className="text-sm">Admin Dashboard</span>
               <div className="w-8 h-8 bg-teal-700 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium">R</span>
+                <span className="text-sm font-medium">A</span>
               </div>
-              <button className="text-sm hover:text-teal-200">Logout</button>
+              <button 
+                onClick={handleLogout}
+                className="text-sm hover:text-teal-200 transition-colors"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* <div className="flex"> */}
-      {/* Sidebar */}
-
-      <main className=" flex  justify-center p-6  bg-gradient-to-br from-blue-50 to-blue-100">
-        <div className="flex flex-col space-y-8 w-2/3 bg-white p-6 rounded-lg border border-blue-200 shadow-lg">
-          <div className="max-w-6xl">
-            {/* <div className="bg-white rounded-lg shadow-lg p-6"> */}
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              Patient Registration
-              {formData.age && (
-                <span className="ml-4 text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full">
-                  ✓ Form prefilled with patient data
-                </span>
-              )}
-            </h2>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Basic Information Section */}
-              <div className="border-b border-gray-200 pb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Basic Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="Enter patient's full name"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="patient@email.com"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="9876543210"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date of Birth *
-                    </label>
-                    <input
-                      type="date"
-                      name="dateOfBirth"
-                      value={formData.dateOfBirth}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Age
-                    </label>
-                    <input
-                      type="number"
-                      name="age"
-                      value={formData.age}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="29"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Gender *
-                    </label>
-                    <select
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="Mumbai, Maharashtra"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Blood Group
-                    </label>
-                    <select
-                      name="bloodGroup"
-                      value={formData.bloodGroup}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    >
-                      <option value="">Select Blood Group</option>
-                      <option value="A+">A+</option>
-                      <option value="A-">A-</option>
-                      <option value="B+">B+</option>
-                      <option value="B-">B-</option>
-                      <option value="AB+">AB+</option>
-                      <option value="AB-">AB-</option>
-                      <option value="O+">O+</option>
-                      <option value="O-">O-</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Height (cm)
-                    </label>
-                    <input
-                      type="number"
-                      name="heightCm"
-                      value={formData.heightCm}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="172"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Weight (kg)
-                    </label>
-                    <input
-                      type="number"
-                      name="weightKg"
-                      value={formData.weightKg}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="68"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Marital Status
-                    </label>
-                    <select
-                      name="maritalStatus"
-                      value={formData.maritalStatus}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    >
-                      <option value="">Select Marital Status</option>
-                      <option value="Single">Single</option>
-                      <option value="Married">Married</option>
-                      <option value="Divorced">Divorced</option>
-                      <option value="Widowed">Widowed</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Address Information Section */}
-              <div className="border-b border-gray-200 pb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Address Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Street
-                    </label>
-                    <input
-                      type="text"
-                      name="street"
-                      value={formData.street}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="B-201, Sagar Heights"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Area
-                    </label>
-                    <input
-                      type="text"
-                      name="area"
-                      value={formData.area}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="Andheri East"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="Mumbai"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      State
-                    </label>
-                    <input
-                      type="text"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="Maharashtra"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pincode
-                    </label>
-                    <input
-                      type="text"
-                      name="pincode"
-                      value={formData.pincode}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="400069"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Country
-                    </label>
-                    <input
-                      type="text"
-                      name="country"
-                      value={formData.country}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="India"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Emergency Contact Section */}
-              <div className="border-b border-gray-200 pb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Emergency Contact
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Emergency Contact Name
-                    </label>
-                    <input
-                      type="text"
-                      name="emergencyContactName"
-                      value={formData.emergencyContactName}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="Rajesh Shahare"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Relation
-                    </label>
-                    <input
-                      type="text"
-                      name="emergencyContactRelation"
-                      value={formData.emergencyContactRelation}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="Father"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Emergency Contact Phone
-                    </label>
-                    <input
-                      type="tel"
-                      name="emergencyContactPhone"
-                      value={formData.emergencyContactPhone}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="9823123456"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Insurance Information Section */}
-              <div className="border-b border-gray-200 pb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Insurance Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Insurance Provider
-                    </label>
-                    <input
-                      type="text"
-                      name="insuranceProvider"
-                      value={formData.insuranceProvider}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="Star Health Insurance"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Policy Number
-                    </label>
-                    <input
-                      type="text"
-                      name="policyNumber"
-                      value={formData.policyNumber}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="STH12345678"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-12">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Appointment Scheduling
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select Doctor *
-                    </label>
-                    <select
-                      name="doctor"
-                      value={formData.doctor}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    >
-                      <option value="">Choose a doctor</option>
-                      {doctors.map((doctor) => (
-                        <option key={doctor.id} value={doctor.id}>
-                          {doctor.name} - {doctor.specialty}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Appointment Date *
-                    </label>
-                    <input
-                      type="date"
-                      name="appointmentDate"
-                      value={formData.appointmentDate}
-                      onChange={handleInputChange}
-                      required
-                      min={new Date().toISOString().split("T")[0]}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Appointment Time *
-                    </label>
-                    <select
-                      name="appointmentTime"
-                      value={formData.appointmentTime}
-                      onChange={handleInputChange}
-                      required
-                      disabled={!selectedDoctor}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-100"
-                    >
-                      <option value="">Select time slot</option>
-                      {selectedDoctor?.availableSlots.map((slot) => (
-                        <option key={slot} value={slot}>
-                          {slot}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Reason for Visit
-                    </label>
-                    <input
-                      type="text"
-                      name="reason"
-                      value={formData.reason}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="Brief description of visit reason"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-4 pt-6">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData({
-                      // Basic Information
-                      name: "",
-                      email: "",
-                      phone: "",
-                      dateOfBirth: "",
-                      age: "",
-                      gender: "",
-                      location: "",
-                      bloodGroup: "",
-                      heightCm: "",
-                      weightKg: "",
-                      maritalStatus: "",
-                      
-                      // Address Information
-                      street: "",
-                      area: "",
-                      city: "",
-                      state: "",
-                      pincode: "",
-                      country: "",
-                      
-                      // Emergency Contact
-                      emergencyContactName: "",
-                      emergencyContactRelation: "",
-                      emergencyContactPhone: "",
-                      
-                      // Insurance
-                      insuranceProvider: "",
-                      policyNumber: "",
-                      
-                      // Appointment Information
-                      appointmentDate: "",
-                      appointmentTime: "",
-                      doctor: "",
-                      reason: "",
-                    })
-                  }
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  Clear Form
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors"
-                >
-                  Register Patient
-                </button>
-              </div>
-            </form>
-            {/* </div> */}
-          </div>
-
-          <div className="max-w-6xl">
-            {/* <div className="bg-white rounded-lg shadow-lg p-6"> */}
-            {/* <h2 className="text-2xl font-bold text-gray-800 mb-6">Doctor Schedule Management</h2> */}
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {doctors.map((doctor) => (
-                <div
-                  key={doctor.id}
-                  className="border border-gray-200 rounded-lg p-4"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">
-                        {doctor.name}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {doctor.specialty}
-                      </p>
-                    </div>
-                    <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
-                      <span className="text-teal-600 font-medium">
-                        {doctor.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Available Time Slots
-                    </h4>
-                    <div className="grid grid-cols-3 gap-2">
-                      {doctor.availableSlots.map((slot) => (
-                        <div
-                          key={slot}
-                          className="px-3 py-2 bg-green-100 text-green-800 text-sm rounded-md text-center"
-                        >
-                          {slot}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Today's Appointments
-                    </h4>
-                    <div className="space-y-2">
-                      {patients
-                        .filter(
-                          (p) =>
-                            p.doctor === doctor.id &&
-                            p.appointmentDate ===
-                              new Date().toISOString().split("T")[0]
-                        )
-                        .map((patient) => (
-                          <div
-                            key={patient.id}
-                            className="flex items-center justify-between p-2 bg-blue-50 rounded"
-                          >
-                            <span className="text-sm font-medium">
-                              {patient.name}
-                            </span>
-                            <span className="text-sm text-blue-600">
-                              {patient.appointmentTime}
-                            </span>
-                          </div>
-                        ))}
-                      {patients.filter(
-                        (p) =>
-                          p.doctor === doctor.id &&
-                          p.appointmentDate ===
-                            new Date().toISOString().split("T")[0]
-                      ).length === 0 && (
-                        <p className="text-sm text-gray-500 italic">
-                          No appointments today
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+      {/* Main Content */}
+      <div className="p-6">
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Admitted Patients</h1>
+              <p className="text-gray-600 mt-1">Manage and view all admitted patients</p>
             </div>
-            {/* </div> */}
+            <button
+              onClick={handleAddPatient}
+              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span>Add Patient</span>
+            </button>
           </div>
         </div>
-        {/* )} */}
 
-        <PatientCheckIn />
-      </main>
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-teal-100 rounded-lg">
+                <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Patients</p>
+                <p className="text-2xl font-semibold text-gray-900">{patients.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Admitted</p>
+                <p className="text-2xl font-semibold text-gray-900">{patients.filter(p => p.status === 'Admitted').length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Departments</p>
+                <p className="text-2xl font-semibold text-gray-900">{new Set(patients.map(p => p.department)).size}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <div className="flex items-center">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-4 8a3 3 0 01-3-3V8a3 3 0 016 0v4a3 3 0 01-3 3z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Available Rooms</p>
+                <p className="text-2xl font-semibold text-gray-900">15</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      {/* </aside> */}
-
-      {/* Main Content */}
-
-      {/* </div> */}
+        {/* Patients Table */}
+        <div className="bg-white rounded-lg shadow-sm border">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Patient List</h2>
+          </div>
+          
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+              <p className="mt-2 text-gray-600">Loading patients...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Patient ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Age/Gender
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Department
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Doctor
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Room
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Admission Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {patients.map((patient) => (
+                    <tr key={patient.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {patient.patientId}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {patient.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {patient.age} / {patient.gender}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {patient.department}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {patient.doctor}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {patient.room}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(patient.admissionDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(patient.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button className="text-teal-600 hover:text-teal-900 mr-3">
+                          View
+                        </button>
+                        <button className="text-blue-600 hover:text-blue-900 mr-3">
+                          Edit
+                        </button>
+                        <button className="text-red-600 hover:text-red-900">
+                          Discharge
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          
+          {!loading && patients.length === 0 && (
+            <div className="p-8 text-center">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No patients</h3>
+              <p className="mt-1 text-sm text-gray-500">Get started by adding a new patient.</p>
+              <div className="mt-6">
+                <button
+                  onClick={handleAddPatient}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700"
+                >
+                  <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add Patient
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

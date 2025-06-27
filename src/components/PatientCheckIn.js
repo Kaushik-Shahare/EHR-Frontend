@@ -71,6 +71,7 @@ const  PatientCheckIn =() => {
         
         console.log("TapResponse================", TapResponse.data.session.session_token);
         if( TapResponse.data.session.session_token) {
+          localStorage.setItem("session_token", TapResponse.data.session.session_token);
           updateSessionToken(TapResponse.data.session.session_token);
           updatePatient(TapResponse.data.session.patient);
           console.log("Session token updated in context:", TapResponse.data.session.session_token);
@@ -92,7 +93,7 @@ const  PatientCheckIn =() => {
     return `${hours}h ${mins}m`
   }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className=" bg-gradient-to-br from-blue-50 to-blue-100">
       {/* Header */}
       {/* <header className="bg-white shadow-sm border-b border-blue-200">
         <div className="max-w-4xl mx-auto px-4 py-4">

@@ -87,6 +87,9 @@ export const AuthProvider = ({ children }) => {
       
       // Save token to cookie
       Cookies.set('token', res.token, { expires: 1 }); // Expires in 1 day
+      console.log('AuthContext: Token set in cookies:=================', res.user); 
+      localStorage.setItem('token', res.token);
+      localStorage.setItem('user', JSON.stringify(res.user));
       
       // Update state
       setUser(res.user);
