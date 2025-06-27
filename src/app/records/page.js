@@ -82,7 +82,7 @@ export default function RecordsPage() {
           {(user?.role === 'DOCTOR' || user?.role === 'NURSE' || user?.role === 'ADMIN') && (
             <div className="flex space-x-2">
               <Link href="/records/new">
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                <button className="px-4 py-2 bg-blue-600 text-black rounded-md hover:bg-blue-700 transition-colors">
                   Add New Record
                 </button>
               </Link>
@@ -131,7 +131,7 @@ export default function RecordsPage() {
                   onClick={() => handlePageChange(index + 1)}
                   className={`px-3 py-1 rounded ${
                     currentPage === index + 1
-                      ? "bg-blue-600 text-white"
+                      ? "bg-blue-600 text-black"
                       : "bg-gray-200 hover:bg-gray-300 text-gray-700"
                   }`}
                 >
@@ -160,7 +160,7 @@ export default function RecordsPage() {
             <p className="text-gray-500 mb-4">No medical records found.</p>
             {(user?.role === 'DOCTOR' || user?.role === 'NURSE' || user?.role === 'ADMIN') && (
               <Link href="/records/new">
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                <button className="px-4 py-2 bg-blue-600 text-black rounded-md hover:bg-blue-700 transition-colors">
                   Create First Record
                 </button>
               </Link>

@@ -18,11 +18,21 @@ export const AuthProvider = ({ children }) => {
     // Check if user is logged in
     const token = localStorage.getItem('token') || Cookies.get('token');
     if (token) {
+      console.log('AuthContext init: Token found, loading user');
       loadUser(token);
     } else {
+      console.log('AuthContext init: No token found, skipping user load');
       setLoading(false);
     }
   }, []);
+  
+  // Additional effect to monitor user status for debugging
+  useEffect(() => {
+    console.log('AuthContext: User state updated', { 
+      isUserDefined: !!user,
+      userObject: user 
+    });
+  }, [user]);
 
   // Load user data with the token
   const loadUser = async (token) => {
@@ -84,11 +94,21 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       
       // Redirect based on profile status
-      if (res.hasProfile) {
-        router.push('/dashboard');
-      } else {
-        router.push('/profile');
+      // if doctor
+      if (res.user.user_type === 'Doctor') {
+        router.push('/doctor');
+        console.log('Redirecting to doctor dashboard');
+      } else if (res.user.user_type === 'Patient') {
+        if (res.hasProfile) {
+          router.push('/dashboard');
+        } else {
+          router.push('/profile');
+        }
+      } else if (res.user.user_type === 'Admin') {
+        router.push('/admin-dashboard');
       }
+      setLoading(false);
+
       return true;
     } catch (err) {
       setLoading(false);

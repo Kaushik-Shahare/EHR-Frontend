@@ -1,7 +1,8 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import documentService from '@/services/documentService';
 
 /**
  * Edit Profile Modal Component
@@ -17,6 +18,15 @@ export default function EditProfileModal({ isOpen, onClose, onSubmit, profileDat
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Document upload state
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [documentError, setDocumentError] = useState('');
+  const [documentSuccess, setDocumentSuccess] = useState('');
+  const [documentDescription, setDocumentDescription] = useState('');
+  const [documentType, setDocumentType] = useState('');
+  const [isEmergencyAccessible, setIsEmergencyAccessible] = useState(false);
+  const fileInputRef = useRef(null);
   
   const {
     register,
@@ -149,6 +159,77 @@ export default function EditProfileModal({ isOpen, onClose, onSubmit, profileDat
       setError(err.message || 'Failed to update profile.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Handle document upload
+  const handleDocumentUpload = async (e) => {
+    e.preventDefault();
+    
+    // Reset status messages
+    setDocumentError('');
+    setDocumentSuccess('');
+    
+    // Check if file is selected
+    if (!fileInputRef.current.files || fileInputRef.current.files.length === 0) {
+      setDocumentError('Please select a file to upload');
+      return;
+    }
+    
+    const file = fileInputRef.current.files[0];
+    
+    // Validate file type (PDF)
+    if (file.type !== 'application/pdf') {
+      setDocumentError('Only PDF files are allowed');
+      return;
+    }
+    
+    // Validate file size (maximum 100MB as per backend requirement)
+    if (file.size > 100 * 1024 * 1024) {
+      setDocumentError('File size exceeds the maximum limit of 100MB');
+      return;
+    }
+    
+    // Validate description
+    if (!documentDescription.trim()) {
+      setDocumentError('Please provide a description for the document');
+      return;
+    }
+    
+    // Validate document type
+    if (!documentType.trim()) {
+      setDocumentError('Please select a document type');
+      return;
+    }
+    
+    // Create FormData object
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('description', documentDescription.trim());
+    formData.append('document_type', documentType.trim());
+    formData.append('is_emergency_accessible', isEmergencyAccessible);
+    
+    try {
+      setIsUploadingDocument(true);
+      
+      // Upload the document
+      const response = await documentService.uploadDocument(formData);
+      console.log('Document uploaded successfully:', response);
+      
+      // Reset form
+      setDocumentDescription('');
+      setDocumentType('');
+      setIsEmergencyAccessible(false);
+      fileInputRef.current.value = '';
+      
+      // Show success message
+      setDocumentSuccess('Document uploaded successfully!');
+      
+    } catch (err) {
+      console.error('Document upload failed:', err);
+      setDocumentError(err.message || 'Failed to upload document. Please try again.');
+    } finally {
+      setIsUploadingDocument(false);
     }
   };
 
@@ -661,11 +742,107 @@ export default function EditProfileModal({ isOpen, onClose, onSubmit, profileDat
               </div>
             </div>
 
+            {/* Document Upload Section */}
+            <div className="border-b border-gray-200 pb-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Upload Medical Documents</h2>
+              <div className="mb-4">
+                <p className="text-sm text-gray-500">
+                  Upload your medical documents such as lab reports, prescriptions, or insurance details. Only PDF files are supported.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="document_upload" className="block text-sm font-medium text-gray-700 mb-1">
+                    Select Document (PDF only, max 100MB)
+                  </label>
+                  <input
+                    type="file"
+                    id="document_upload"
+                    accept="application/pdf"
+                    ref={fileInputRef}
+                    className="w-full rounded-md border border-gray-300 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="document_type" className="block text-sm font-medium text-gray-700 mb-1">
+                    Document Type
+                  </label>
+                  <select
+                    id="document_type"
+                    className="w-full rounded-md border border-gray-300 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={documentType}
+                    onChange={(e) => setDocumentType(e.target.value)}
+                  >
+                    <option value="">Select Document Type</option>
+                    <option value="Lab Report">Lab Report</option>
+                    <option value="Prescription">Prescription</option>
+                    <option value="Medical Certificate">Medical Certificate</option>
+                    <option value="Insurance Document">Insurance Document</option>
+                    <option value="X-Ray Report">X-Ray Report</option>
+                    <option value="MRI Report">MRI Report</option>
+                    <option value="CT Scan Report">CT Scan Report</option>
+                    <option value="Discharge Summary">Discharge Summary</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="document_description" className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    id="document_description"
+                    className="w-full rounded-md border border-gray-300 p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={documentDescription}
+                    onChange={(e) => setDocumentDescription(e.target.value)}
+                    placeholder="Enter a brief description of this document"
+                    rows={3}
+                  ></textarea>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_emergency_accessible"
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    checked={isEmergencyAccessible}
+                    onChange={(e) => setIsEmergencyAccessible(e.target.checked)}
+                  />
+                  <label htmlFor="is_emergency_accessible" className="ml-2 block text-sm text-gray-700">
+                    Emergency Access
+                  </label>
+                </div>
+              </div>
+
+              {documentError && (
+                <div className="mt-4 text-sm text-red-600">
+                  {documentError}
+                </div>
+              )}
+
+              {documentSuccess && (
+                <div className="mt-4 text-sm text-green-600">
+                  {documentSuccess}
+                </div>
+              )}
+
+              <div className="mt-4">
+                <button
+                  onClick={handleDocumentUpload}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-black font-semibold py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  disabled={isUploadingDocument}
+                >
+                  {isUploadingDocument ? 'Uploading Document...' : 'Upload Document'}
+                </button>
+              </div>
+            </div>
+
             {/* Submit Button */}
             <div className="pt-6">
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-black font-semibold py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 disabled={submitting}
               >
                 {submitting ? 'Saving Profile...' : 'Save Profile'}

@@ -47,7 +47,7 @@ const Navbar = ({ title }) => {
   const navigateToDashboard = () => {
     if (isAuthenticated) {
       // If the user is authenticated, redirect to dashboard or profile
-      if (hasProfile) {
+      if (hasProfile && user.user_type === 'PATIENT') {
         router.push('/dashboard');
       } else {
         router.push('/profile');
@@ -119,7 +119,7 @@ const Navbar = ({ title }) => {
                   aria-label="Toggle profile menu"
                   title="Click to open profile menu"
                 >
-                  <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-md">
+                  <div className="w-10 h-10 bg-blue-600 text-black rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-md">
                     <span className="font-medium text-sm">
                       {user.name ? user.name.charAt(0).toUpperCase() : (
                         user.email ? user.email.charAt(0).toUpperCase() : 'U'
@@ -151,7 +151,7 @@ const Navbar = ({ title }) => {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
-                          {hasProfile ? 'Edit Profile' : 'Complete Profile'}
+                          {hasProfile ? 'Profile' : 'Complete Profile'}
                         </div>
                       </div>
                     </Link>
@@ -180,7 +180,7 @@ const Navbar = ({ title }) => {
                 </Link>
                 <Link 
                   href="/signup" 
-                  className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                  className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-black font-medium transition-colors"
                 >
                   Sign Up
                 </Link>

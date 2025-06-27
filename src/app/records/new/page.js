@@ -7,17 +7,19 @@ import { useForm } from 'react-hook-form';
 import MainLayout from '@/components/MainLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useRecords } from '@/context/RecordContext';
+import patientService from '@/services/patientService';
 
 export default function NewRecordPage() {
   const router = useRouter();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
-  const { createVisitRecord, createDiagnosisRecord, createLabResultRecord, createPrescriptionRecord, createVitalSignsRecord, loading, error } = useRecords();
+  const { createVisitRecord, createDiagnosisRecord, createLabResultRecord, createPrescriptionRecord, createVitalSignsRecord, loading } = useRecords();
   
   const [recordType, setRecordType] = useState('VISIT');
   const [patientId, setPatientId] = useState('');
   const [patients, setPatients] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
   
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
@@ -30,12 +32,29 @@ export default function NewRecordPage() {
       isAuthenticated && 
       user && 
       user.role !== 'DOCTOR' && 
-      user.role !== 'NURSE' && 
-      user.role !== 'ADMIN'
+      user.role !== 'NURSE'
     ) {
-      router.push('/dashboard');
+      router.push('/doctor');
     }
   }, [authLoading, isAuthenticated, user, router]);
+  
+  // Fetch patients for the provider to choose from
+  useEffect(() => {
+    const fetchPatients = async () => {
+      if (isAuthenticated && user && (user.role === 'DOCTOR' || user.role === 'NURSE' || user.role === 'ADMIN')) {
+        try {
+          // Use our patient service to fetch all patients
+          const patientsData = await patientService.getAllPatients();
+          setPatients(patientsData);
+        } catch (err) {
+          console.error('Error fetching patients:', err);
+          setError(err.message || 'Failed to fetch patients');
+        }
+      }
+    };
+    
+    fetchPatients();
+  }, [isAuthenticated, user]);
 
   // Function to create a new record based on type
   const onSubmit = async (data) => {
@@ -44,27 +63,111 @@ export default function NewRecordPage() {
       setSuccess(false);
       
       let response;
+      let transformedData = {};
       
+      // Common fields for all record types
+      transformedData.patient = data.patientId; // Backend expects 'patient' field, not 'patientId'
+      
+      // Transform data based on record type
       switch(recordType) {
         case 'VISIT':
-          response = await createVisitRecord(data);
+          // For visits, we send the data directly
+          transformedData = {
+            patient: data.patientId,
+            visit_type: data.visitType,
+            chief_complaint: data.chiefComplaint,
+            location: data.location || null,
+            reason_for_visit: data.description || null,
+            diagnosis: null, // We'll add diagnoses separately 
+            treatment_notes: data.notes || null,
+            recommendation: data.recommendation || null,
+            tags: data.tags || null,
+            // Parse the date if provided
+            check_in_time: data.visitDate ? new Date(data.visitDate).toISOString() : new Date().toISOString(),
+            status: 'checked_in' // Default status
+          };
+          response = await createVisitRecord(transformedData);
           break;
+          
         case 'DIAGNOSIS':
-          response = await createDiagnosisRecord(data);
+          // For diagnoses, we need a visit
+          transformedData = {
+            patient: data.patientId,
+            condition_name: data.conditionName,
+            icd_code: data.icdCode || null, 
+            severity: data.severity ? data.severity.toLowerCase() : 'moderate',
+            status: data.status ? data.status.toLowerCase() : 'active',
+            notes: data.notes || null,
+            treatment_plan: data.treatmentPlan || null,
+            // The visit will be created implicitly by the RecordContext
+          };
+          response = await createDiagnosisRecord(transformedData);
           break;
+          
         case 'LAB_RESULT':
-          response = await createLabResultRecord(data);
+          // For lab results, we need a visit
+          transformedData = {
+            patient: data.patientId,
+            test_name: data.testName,
+            result: data.result,
+            normal_range: data.normalRange || null,
+            units: data.units || null,
+            interpretation: data.interpretation || null,
+            performed_by: data.performedBy || null,
+            // Parse the date if provided
+            test_date: data.testDate ? new Date(data.testDate).toISOString() : new Date().toISOString(),
+            // The visit will be created implicitly by the RecordContext
+          };
+          response = await createLabResultRecord(transformedData);
           break;
+          
         case 'PRESCRIPTION':
-          response = await createPrescriptionRecord(data);
+          // For prescriptions, we need a visit
+          transformedData = {
+            patient: data.patientId,
+            medication_name: data.medicationName,
+            dosage: data.dosage,
+            frequency: data.frequency,
+            duration: data.duration,
+            pharmacy: data.pharmacy || null,
+            instructions: data.instructions || null,
+            reason: data.reason || null,
+            // Parse the dates if provided
+            start_date: data.startDate ? new Date(data.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            end_date: data.endDate ? new Date(data.endDate).toISOString().split('T')[0] : null,
+            // The visit will be created implicitly by the RecordContext
+          };
+          response = await createPrescriptionRecord(transformedData);
           break;
+          
         case 'VITAL_SIGNS':
-          response = await createVitalSignsRecord(data);
+          // For vital signs, we need a visit
+          transformedData = {
+            patient: data.patientId,
+            temperature: data.temperature || null,
+            temperature_unit: data.temperatureUnit === '°F' ? 'fahrenheit' : 'celsius',
+            blood_pressure_systolic: data.bloodPressureSystolic || null,
+            blood_pressure_diastolic: data.bloodPressureDiastolic || null,
+            heart_rate: data.heartRate || null,
+            respiratory_rate: data.respiratoryRate || null,
+            oxygen_saturation: data.oxygenSaturation || null,
+            height: data.height || null,
+            height_unit: data.heightUnit || 'cm',
+            weight: data.weight || null,
+            weight_unit: data.weightUnit || 'kg',
+            notes: data.notes || null,
+            // BMI is calculated by the backend
+            recorded_at: data.recordedAt ? new Date(data.recordedAt).toISOString() : new Date().toISOString(),
+            // The visit will be created implicitly by the RecordContext
+          };
+          response = await createVitalSignsRecord(transformedData);
           break;
+          
         default:
           throw new Error('Invalid record type');
       }
       
+      console.log('Record created successfully:', response);
       setSuccess(true);
       reset();
       
@@ -76,6 +179,7 @@ export default function NewRecordPage() {
       }
     } catch (err) {
       console.error('Error creating record:', err);
+      setError(err.response?.data?.message || 'Failed to create record');
     } finally {
       setSubmitting(false);
     }
@@ -110,7 +214,10 @@ export default function NewRecordPage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <button
               type="button"
-              onClick={() => setRecordType('VISIT')}
+              onClick={() => {
+                setRecordType('VISIT');
+                setError(null);
+              }}
               className={`p-3 border rounded-md ${
                 recordType === 'VISIT'
                   ? 'bg-blue-100 border-blue-500 text-blue-700'
@@ -121,7 +228,10 @@ export default function NewRecordPage() {
             </button>
             <button
               type="button"
-              onClick={() => setRecordType('DIAGNOSIS')}
+              onClick={() => {
+                setRecordType('DIAGNOSIS');
+                setError(null);
+              }}
               className={`p-3 border rounded-md ${
                 recordType === 'DIAGNOSIS'
                   ? 'bg-blue-100 border-blue-500 text-blue-700'
@@ -132,7 +242,10 @@ export default function NewRecordPage() {
             </button>
             <button
               type="button"
-              onClick={() => setRecordType('LAB_RESULT')}
+              onClick={() => {
+                setRecordType('LAB_RESULT');
+                setError(null);
+              }}
               className={`p-3 border rounded-md ${
                 recordType === 'LAB_RESULT'
                   ? 'bg-blue-100 border-blue-500 text-blue-700'
@@ -143,7 +256,10 @@ export default function NewRecordPage() {
             </button>
             <button
               type="button"
-              onClick={() => setRecordType('PRESCRIPTION')}
+              onClick={() => {
+                setRecordType('PRESCRIPTION');
+                setError(null);
+              }}
               className={`p-3 border rounded-md ${
                 recordType === 'PRESCRIPTION'
                   ? 'bg-blue-100 border-blue-500 text-blue-700'
@@ -154,7 +270,10 @@ export default function NewRecordPage() {
             </button>
             <button
               type="button"
-              onClick={() => setRecordType('VITAL_SIGNS')}
+              onClick={() => {
+                setRecordType('VITAL_SIGNS');
+                setError(null);
+              }}
               className={`p-3 border rounded-md ${
                 recordType === 'VITAL_SIGNS'
                   ? 'bg-blue-100 border-blue-500 text-blue-700'
@@ -169,7 +288,16 @@ export default function NewRecordPage() {
         {/* Error message */}
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-            <p className="text-red-700">{error}</p>
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-red-700 text-sm font-medium">{error}</p>
+              </div>
+            </div>
           </div>
         )}
         
@@ -187,19 +315,28 @@ export default function NewRecordPage() {
             <div className="mb-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">General Information</h3>
               
-              {/* Patient ID */}
+              {/* Patient Selection */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="patientId">
-                  Patient ID <span className="text-red-500">*</span>
+                  Select Patient <span className="text-red-500">*</span>
                 </label>
-                <input
+                <select
                   id="patientId"
-                  type="text"
                   className={`w-full p-2 border rounded-md ${errors.patientId ? 'border-red-500' : 'border-gray-300'}`}
-                  {...register('patientId', { required: 'Patient ID is required' })}
-                />
+                  {...register('patientId', { required: 'Patient selection is required' })}
+                >
+                  <option value="">-- Select a patient --</option>
+                  {patients.map(patient => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.name || patient.email} {patient.id && `(ID: ${patient.id})`}
+                    </option>
+                  ))}
+                </select>
                 {errors.patientId && (
                   <p className="mt-1 text-sm text-red-600">{errors.patientId.message}</p>
+                )}
+                {patients.length === 0 && (
+                  <p className="mt-1 text-sm text-amber-600">Loading patients...</p>
                 )}
               </div>
 
@@ -936,13 +1073,13 @@ export default function NewRecordPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className={`px-4 py-2 rounded-md text-white ${
+                className={`px-4 py-2 rounded-md text-black ${
                   submitting ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
                 {submitting ? (
                   <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>

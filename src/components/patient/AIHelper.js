@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 
 export default function AIHelper({
@@ -9,13 +9,92 @@ export default function AIHelper({
   onRefresh,
 }) {
   const [expandedSuggestion, setExpandedSuggestion] = useState(null);
+  const [processingDiagnosis, setProcessingDiagnosis] = useState(null);
+  const [notification, setNotification] = useState(null);
 
   const toggleExpand = (condition) => {
     setExpandedSuggestion(expandedSuggestion === condition ? null : condition);
   };
+  
+  const handleAccept = async (suggestion) => {
+    try {
+      setProcessingDiagnosis(suggestion.condition);
+      await onAccept(suggestion);
+      
+      // Show success notification
+      setNotification({
+        type: 'success',
+        message: `Diagnosis '${suggestion.condition}' successfully added to patient record.`
+      });
+      
+      // Hide after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+    } catch (error) {
+      // Show error notification
+      setNotification({
+        type: 'error',
+        message: error.message || 'Failed to add diagnosis. Please try again.'
+      });
+      
+      // Hide after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+    } finally {
+      setProcessingDiagnosis(null);
+    }
+  };
+  
+  const handleReject = (suggestion) => {
+    onReject(suggestion);
+    
+    // Show notification
+    setNotification({
+      type: 'info',
+      message: `Diagnosis '${suggestion.condition}' has been dismissed.`
+    });
+    
+    // Hide after 3 seconds
+    setTimeout(() => setNotification(null), 3000);
+  };
+  
+  const handleRefresh = () => {
+    setNotification({
+      type: 'info',
+      message: 'Requesting new AI analysis...'
+    });
+    
+    onRefresh();
+    
+    // This would be updated with real response when the backend implements real-time AI analysis
+    setTimeout(() => {
+      setNotification({
+        type: 'success',
+        message: 'AI analysis complete. Suggestions updated.'
+      });
+      setTimeout(() => setNotification(null), 3000);
+    }, 2000);
+  };
 
   return (
     <div className="bg-white overflow-hidden shadow-lg border border-purple-100 ring-1 ring-purple-200 ring-opacity-50 rounded-xl">
+      {notification && (
+        <div className={`px-4 py-3 ${
+          notification.type === 'success' ? 'bg-green-50 text-green-700 border-b border-green-100' :
+          notification.type === 'error' ? 'bg-red-50 text-red-700 border-b border-red-100' :
+          'bg-blue-50 text-blue-700 border-b border-blue-100'
+        } flex items-center`}>
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            {notification.type === 'success' ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            ) : notification.type === 'error' ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            )}
+          </svg>
+          <p className="text-sm font-medium">{notification.message}</p>
+        </div>
+      )}
+    
       <div className="bg-gradient-to-r from-aiPurple to-aiPurple/90  px-6 py-4 flex justify-between items-center">
         <div className="flex items-center">
           <div className="bg-white/20 p-1.5 rounded-lg mr-3">
@@ -29,7 +108,7 @@ export default function AIHelper({
           </div>
         </div>
         <button
-          onClick={onRefresh}
+          onClick={handleRefresh}
           className="p-2 rounded-full hover:bg-white/20 transition-colors duration-200 backdrop-blur-sm border border-white/20"
           aria-label="Refresh suggestions"
         >
@@ -123,8 +202,9 @@ export default function AIHelper({
                     
                     <div className="flex justify-end gap-3 mt-3">
                       <button
-                        onClick={() => onReject(suggestion)}
+                        onClick={() => handleReject(suggestion)}
                         className="px-4 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 shadow-sm transition-colors duration-150"
+                        disabled={processingDiagnosis === suggestion.condition}
                       >
                         <div className="flex items-center">
                           <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -134,15 +214,28 @@ export default function AIHelper({
                         </div>
                       </button>
                       <button
-                        onClick={() => onAccept(suggestion)}
-                        className="px-4 py-1.5 text-sm bg-gradient-to-r from-aiPurple to-aiPurple/90  rounded-lg hover:shadow-md transition-all duration-150 font-medium"
+                        onClick={() => handleAccept(suggestion)}
+                        className={`px-4 py-1.5 text-sm bg-gradient-to-r from-aiPurple to-aiPurple/90 rounded-lg hover:shadow-md transition-all duration-150 font-medium flex items-center ${
+                          processingDiagnosis === suggestion.condition ? 'opacity-70 cursor-wait' : ''
+                        }`}
+                        disabled={processingDiagnosis === suggestion.condition}
                       >
-                        <div className="flex items-center">
-                          <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          Accept Diagnosis
-                        </div>
+                        {processingDiagnosis === suggestion.condition ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Accept Diagnosis
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -158,7 +251,7 @@ export default function AIHelper({
               </svg>
               <p className="text-sm text-gray-600 mb-3">No diagnostic suggestions available yet</p>
               <button
-                onClick={onRefresh}
+                onClick={handleRefresh}
                 className="px-4 py-2 text-sm bg-white border border-purple-200 shadow-sm rounded-lg text-aiPurple hover:bg-purple-50 transition-colors duration-150 flex items-center"
               >
                 <svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

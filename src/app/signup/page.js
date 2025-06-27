@@ -110,8 +110,8 @@ export default function Signup() {
             {...register('password', {
               required: 'Password is required',
               minLength: {
-                value: 6,
-                message: 'Password must be at least 6 characters'
+                value: 4,
+                message: 'Password must be at least 4 characters'
               }
             })}
           />
@@ -138,7 +138,7 @@ export default function Signup() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-70"
+          className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-black font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-70"
         >
           {loading ? 'Creating account...' : 'Create Account'}
         </button>

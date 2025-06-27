@@ -2,14 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/context/AuthContext';
 import Box from '@/components/Box';
+import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 
 export default function LandingPage() {
   const router = useRouter();
   const { isAuthenticated, loading, hasProfile } = useAuth();
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Navbar */}
@@ -29,7 +28,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <button 
                   onClick={() => router.push('/signup')}
-                  className="px-6 py-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors text-lg"
+                  className="px-6 py-3 rounded-md bg-blue-600 hover:bg-blue-700 text-black font-medium transition-colors text-lg"
                 >
                   Get Started
                 </button>
@@ -195,7 +194,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-12 px-4 sm:px-6 lg:px-8">
+      <footer className="bg-gray-800 text-black py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
@@ -208,16 +207,16 @@ export default function LandingPage() {
               <h3 className="text-lg font-bold mb-4">Quick Links</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/" className="text-gray-400 hover:text-white">Home</Link>
+                  <Link href="/" className="text-gray-400 hover:text-black">Home</Link>
                 </li>
                 <li>
-                  <Link href="#features" className="text-gray-400 hover:text-white">Features</Link>
+                  <Link href="#features" className="text-gray-400 hover:text-black">Features</Link>
                 </li>
                 <li>
-                  <Link href="#about" className="text-gray-400 hover:text-white">About Us</Link>
+                  <Link href="#about" className="text-gray-400 hover:text-black">About Us</Link>
                 </li>
                 <li>
-                  <Link href="#contact" className="text-gray-400 hover:text-white">Contact</Link>
+                  <Link href="#contact" className="text-gray-400 hover:text-black">Contact</Link>
                 </li>
               </ul>
             </div>
@@ -225,13 +224,13 @@ export default function LandingPage() {
               <h3 className="text-lg font-bold mb-4">Legal</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="#" className="text-gray-400 hover:text-white">Privacy Policy</Link>
+                  <Link href="#" className="text-gray-400 hover:text-black">Privacy Policy</Link>
                 </li>
                 <li>
-                  <Link href="#" className="text-gray-400 hover:text-white">Terms of Service</Link>
+                  <Link href="#" className="text-gray-400 hover:text-black">Terms of Service</Link>
                 </li>
                 <li>
-                  <Link href="#" className="text-gray-400 hover:text-white">HIPAA Compliance</Link>
+                  <Link href="#" className="text-gray-400 hover:text-black">HIPAA Compliance</Link>
                 </li>
               </ul>
             </div>

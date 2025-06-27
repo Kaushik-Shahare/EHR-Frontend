@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import profileService from '@/services/profileService';
+import documentService from '@/services/documentService';
 import EditProfileModal from '@/components/profile/EditProfileModal';
 import MainLayout from '@/components/MainLayout';
 
@@ -15,6 +16,16 @@ export default function ProfileForm() {
   const [profileData, setProfileData] = useState(null);
   const [hasProfile, setHasProfile] = useState(false);
   const router = useRouter();
+  
+  // Document upload state
+  const [documents, setDocuments] = useState([]);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [documentError, setDocumentError] = useState('');
+  const [documentSuccess, setDocumentSuccess] = useState('');
+  const [documentDescription, setDocumentDescription] = useState('');
+  const [documentType, setDocumentType] = useState('');
+  const [isEmergencyAccessible, setIsEmergencyAccessible] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     // Redirect to login if not authenticated
@@ -96,8 +107,23 @@ export default function ProfileForm() {
       }
     };
 
+    // Fetch user's documents if the user is authenticated and is a patient
+    const fetchDocuments = async () => {
+      try {
+        if (isAuthenticated && user?.user_type?.name === 'Patient') {
+          const docsData = await documentService.getMyDocuments();
+          console.log('Documents fetched:', docsData);
+          setDocuments(docsData);
+        }
+      } catch (err) {
+        console.error('Error fetching documents:', err);
+        setDocumentError('Failed to load your documents. Please try again.');
+      }
+    };
+
     if (isAuthenticated) {
       fetchProfile();
+      fetchDocuments();
     }
   }, [isAuthenticated, loading, user, router]);
 
@@ -197,6 +223,80 @@ export default function ProfileForm() {
     }
   };
 
+  // Handle document upload
+  const handleDocumentUpload = async (e) => {
+    e.preventDefault();
+    
+    // Reset status messages
+    setDocumentError('');
+    setDocumentSuccess('');
+    
+    // Check if file is selected
+    if (!fileInputRef.current.files || fileInputRef.current.files.length === 0) {
+      setDocumentError('Please select a file to upload');
+      return;
+    }
+    
+    const file = fileInputRef.current.files[0];
+    
+    // Validate file type (PDF)
+    if (file.type !== 'application/pdf') {
+      setDocumentError('Only PDF files are allowed');
+      return;
+    }
+    
+    // Validate file size (maximum 100MB as per backend requirement)
+    if (file.size > 100 * 1024 * 1024) {
+      setDocumentError('File size exceeds the maximum limit of 100MB');
+      return;
+    }
+    
+    // Validate description
+    if (!documentDescription.trim()) {
+      setDocumentError('Please provide a description for the document');
+      return;
+    }
+    
+    // Validate document type
+    if (!documentType.trim()) {
+      setDocumentError('Please select a document type');
+      return;
+    }
+    
+    // Create FormData object
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('description', documentDescription.trim());
+    formData.append('document_type', documentType.trim());
+    formData.append('is_emergency_accessible', isEmergencyAccessible);
+    
+    try {
+      setIsUploadingDocument(true);
+      
+      // Upload the document
+      const response = await documentService.uploadDocument(formData);
+      console.log('Document uploaded successfully:', response);
+      
+      // Update documents list
+      setDocuments(prevDocs => [response, ...prevDocs]);
+      
+      // Reset form
+      setDocumentDescription('');
+      setDocumentType('');
+      setIsEmergencyAccessible(false);
+      fileInputRef.current.value = '';
+      
+      // Show success message
+      setDocumentSuccess('Document uploaded successfully!');
+      
+    } catch (err) {
+      console.error('Document upload failed:', err);
+      setDocumentError(err.message || 'Failed to upload document. Please try again.');
+    } finally {
+      setIsUploadingDocument(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -209,7 +309,7 @@ export default function ProfileForm() {
   }
 
   return (
-    <MainLayout>
+    <MainLayout title={hasProfile ? 'Your Profile' : 'Complete Your Profile'}>
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white shadow-lg rounded-lg p-6 md:p-8">
@@ -225,7 +325,7 @@ export default function ProfileForm() {
             </p>
             {user && (
               <div className="mt-4 flex justify-center">
-                <div className="w-20 h-20 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-md">
+                <div className="w-20 h-20 bg-blue-600 text-black rounded-full flex items-center justify-center shadow-md">
                   <span className="font-bold text-3xl">
                     {user.name ? user.name.charAt(0).toUpperCase() : 
                      user.email ? user.email.charAt(0).toUpperCase() : 'U'}
@@ -244,6 +344,178 @@ export default function ProfileForm() {
           {success && !showEditModal && (
             <div className="mb-6 bg-green-50 border border-green-200 text-green-800 rounded-md p-4">
               {success}
+            </div>
+          )}
+          
+          {/* Document Upload Section (only shown for patients) */}
+          {user?.user_type?.name === 'Patient' && (
+            <div className="mb-8 border-t border-gray-200 pt-8 mt-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Upload Medical Documents</h2>
+              
+              {documentError && (
+                <div className="mb-4 bg-red-50 border border-red-200 text-red-800 rounded-md p-4">
+                  {documentError}
+                </div>
+              )}
+              
+              {documentSuccess && (
+                <div className="mb-4 bg-green-50 border border-green-200 text-green-800 rounded-md p-4">
+                  {documentSuccess}
+                </div>
+              )}
+              
+              <form onSubmit={handleDocumentUpload} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Document (PDF only)
+                  </label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="application/pdf"
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Document Type
+                  </label>
+                  <select
+                    value={documentType}
+                    onChange={(e) => setDocumentType(e.target.value)}
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    required
+                  >
+                    <option value="" disabled>Select document type</option>
+                    <option value="Lab Report">Lab Report</option>
+                    <option value="Prescription">Prescription</option>
+                    <option value="Medical Certificate">Medical Certificate</option>
+                    <option value="Insurance Document">Insurance Document</option>
+                    <option value="X-Ray Report">X-Ray Report</option>
+                    <option value="MRI Report">MRI Report</option>
+                    <option value="CT Scan Report">CT Scan Report</option>
+                    <option value="Discharge Summary">Discharge Summary</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={documentDescription}
+                    onChange={(e) => setDocumentDescription(e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    rows={3}
+                    placeholder="Enter a brief description of this document"
+                    required
+                  ></textarea>
+                </div>
+                
+                <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      type="checkbox"
+                      checked={isEmergencyAccessible}
+                      onChange={(e) => setIsEmergencyAccessible(e.target.checked)}
+                      className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                    />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label className="font-medium text-gray-700">Emergency Accessible</label>
+                    <p className="text-gray-500">Allow emergency access to this document in critical situations</p>
+                  </div>
+                </div>
+                
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isUploadingDocument}
+                    className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black ${
+                      isUploadingDocument ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+                    } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                  >
+                    {isUploadingDocument ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Uploading...
+                      </>
+                    ) : 'Upload Document'}
+                  </button>
+                </div>
+              </form>
+              
+              {/* Document List */}
+              <div className="mt-8">
+                <h3 className="text-lg font-medium text-gray-800 mb-4">Your Documents</h3>
+                
+                {documents.length === 0 ? (
+                  <div className="text-center py-6 bg-gray-50 rounded-lg">
+                    <p className="text-gray-500">You haven't uploaded any documents yet</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Document Type
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Description
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Uploaded
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Emergency Access
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {documents.map((doc) => (
+                          <tr key={doc.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{doc.document_type || 'Unknown'}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-900">{doc.description}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {new Date(doc.uploaded_at).toLocaleDateString()}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                doc.is_emergency_accessible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {doc.is_emergency_accessible ? 'Yes' : 'No'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <button
+                                onClick={() => window.open(doc.file, '_blank')}
+                                className="text-blue-600 hover:text-blue-900 mr-4"
+                              >
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
           )}
           
@@ -580,7 +852,7 @@ export default function ProfileForm() {
                     <button
                       type="button"
                       onClick={openEditModal}
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium shadow-sm transition-colors"
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-black rounded-md font-medium shadow-sm transition-colors"
                     >
                       Edit Profile
                     </button>
@@ -596,7 +868,7 @@ export default function ProfileForm() {
                   <button
                     type="button"
                     onClick={openEditModal}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium shadow-sm transition-colors"
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-black rounded-md font-medium shadow-sm transition-colors"
                   >
                     Complete Your Profile
                   </button>

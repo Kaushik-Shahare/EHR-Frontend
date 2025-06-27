@@ -49,12 +49,13 @@ export const RecordProvider = ({ children }) => {
       }
       
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/records?${queryParams}`, 
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/records?${queryParams}`, 
         getAuthConfig()
       );
 
-      setRecords(response.data.records);
-      setPagination(response.data.pagination);
+      // Our backend returns data in a data property
+      setRecords(response.data.data || []);
+      setPagination(response.data.pagination || { page: 1, total: 0, pages: 1 });
       setLoading(false);
       return response.data;
     } catch (err) {
@@ -82,7 +83,7 @@ export const RecordProvider = ({ children }) => {
       }
       
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/records/patient/${patientId}?${queryParams}`, 
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/records/patient/${patientId}?${queryParams}`, 
         getAuthConfig()
       );
 
@@ -104,7 +105,7 @@ export const RecordProvider = ({ children }) => {
       setError(null);
       
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/records/patient/${patientId}/all`, 
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/patient/${patientId}/records`, 
         getAuthConfig()
       );
       
@@ -125,7 +126,7 @@ export const RecordProvider = ({ children }) => {
       setError(null);
       
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/records/${id}`, 
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/records/${id}`, 
         getAuthConfig()
       );
       
@@ -146,18 +147,21 @@ export const RecordProvider = ({ children }) => {
       setError(null);
       
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/records/visit`, 
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/patient-visits/`, 
         data, 
         getAuthConfig()
       );
       
       // Update the records list if we have records already loaded
       if (records.length > 0) {
-        setRecords([response.data.record, ...records]);
+        // Backend returns data in a nested data property
+        const newRecord = response.data.data || response.data;
+        setRecords([newRecord, ...records]);
       }
       
       setLoading(false);
-      return response.data.record;
+      // Return the created record data
+      return response.data.data || response.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create visit record');
       setLoading(false);
@@ -171,19 +175,52 @@ export const RecordProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
+      // Data needs to include a visit_id - if this is missing from the data,
+      // we may need to create a visit first and then link the diagnosis to it
+      let visitId = data.visit || null;
+      
+      // If no visit is provided but we have a patient, 
+      // we might need to create an implicit visit first
+      if (!visitId && data.patient) {
+        try {
+          // Create a default visit for this diagnosis if none was provided
+          const visitResponse = await axios.post(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/patient-visits/`,
+            {
+              patient: data.patient,
+              visit_type: 'ROUTINE_CHECKUP',
+              chief_complaint: `Diagnosis: ${data.condition_name}`,
+              status: 'completed'
+            },
+            getAuthConfig()
+          );
+          
+          visitId = visitResponse.data.data?.id || visitResponse.data.id;
+          console.log('Created implicit visit:', visitId);
+        } catch (visitErr) {
+          console.error('Failed to create implicit visit for diagnosis:', visitErr);
+          throw new Error('Failed to create a visit for this diagnosis');
+        }
+      }
+      
+      // Now create the diagnosis with the visit ID
+      const updatedData = { ...data, visit: visitId };
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/records/diagnosis`, 
-        data, 
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/diagnoses/`, 
+        updatedData, 
         getAuthConfig()
       );
       
       // Update the records list if we have records already loaded
       if (records.length > 0) {
-        setRecords([response.data.record, ...records]);
+        // Backend returns data in a nested data property
+        const newRecord = response.data.data || response.data;
+        setRecords([newRecord, ...records]);
       }
       
       setLoading(false);
-      return response.data.record;
+      // Return the created record data
+      return response.data.data || response.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create diagnosis record');
       setLoading(false);
@@ -197,19 +234,52 @@ export const RecordProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
+      // Data needs to include a visit_id - if this is missing from the data,
+      // we may need to create a visit first and then link the lab result to it
+      let visitId = data.visit || null;
+      
+      // If no visit is provided but we have a patient, 
+      // we might need to create an implicit visit first
+      if (!visitId && data.patient) {
+        try {
+          // Create a default visit for this lab result if none was provided
+          const visitResponse = await axios.post(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/patient-visits/`,
+            {
+              patient: data.patient,
+              visit_type: 'ROUTINE_CHECKUP',
+              chief_complaint: `Lab Test: ${data.test_name}`,
+              status: 'completed'
+            },
+            getAuthConfig()
+          );
+          
+          visitId = visitResponse.data.data?.id || visitResponse.data.id;
+          console.log('Created implicit visit:', visitId);
+        } catch (visitErr) {
+          console.error('Failed to create implicit visit for lab result:', visitErr);
+          throw new Error('Failed to create a visit for this lab result');
+        }
+      }
+      
+      // Now create the lab result with the visit ID
+      const updatedData = { ...data, visit: visitId };
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/records/lab-result`, 
-        data, 
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/lab-results/`, 
+        updatedData, 
         getAuthConfig()
       );
       
       // Update the records list if we have records already loaded
       if (records.length > 0) {
-        setRecords([response.data.record, ...records]);
+        // Backend returns data in a nested data property
+        const newRecord = response.data.data || response.data;
+        setRecords([newRecord, ...records]);
       }
       
       setLoading(false);
-      return response.data.record;
+      // Return the created record data
+      return response.data.data || response.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create lab result record');
       setLoading(false);
@@ -223,19 +293,52 @@ export const RecordProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
+      // Data needs to include a visit_id - if this is missing from the data,
+      // we may need to create a visit first and then link the prescription to it
+      let visitId = data.visit || null;
+      
+      // If no visit is provided but we have a patient, 
+      // we might need to create an implicit visit first
+      if (!visitId && data.patient) {
+        try {
+          // Create a default visit for this prescription if none was provided
+          const visitResponse = await axios.post(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/patient-visits/`,
+            {
+              patient: data.patient,
+              visit_type: 'ROUTINE_CHECKUP',
+              chief_complaint: `Prescription: ${data.medication_name}`,
+              status: 'completed'
+            },
+            getAuthConfig()
+          );
+          
+          visitId = visitResponse.data.data?.id || visitResponse.data.id;
+          console.log('Created implicit visit:', visitId);
+        } catch (visitErr) {
+          console.error('Failed to create implicit visit for prescription:', visitErr);
+          throw new Error('Failed to create a visit for this prescription');
+        }
+      }
+      
+      // Now create the prescription with the visit ID
+      const updatedData = { ...data, visit: visitId };
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/records/prescription`, 
-        data, 
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/prescriptions/`, 
+        updatedData, 
         getAuthConfig()
       );
       
       // Update the records list if we have records already loaded
       if (records.length > 0) {
-        setRecords([response.data.record, ...records]);
+        // Backend returns data in a nested data property
+        const newRecord = response.data.data || response.data;
+        setRecords([newRecord, ...records]);
       }
       
       setLoading(false);
-      return response.data.record;
+      // Return the created record data
+      return response.data.data || response.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create prescription record');
       setLoading(false);
@@ -249,19 +352,52 @@ export const RecordProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
+      // Data needs to include a visit_id - if this is missing from the data,
+      // we may need to create a visit first and then link the vital signs to it
+      let visitId = data.visit || null;
+      
+      // If no visit is provided but we have a patient, 
+      // we might need to create an implicit visit first
+      if (!visitId && data.patient) {
+        try {
+          // Create a default visit for these vital signs if none was provided
+          const visitResponse = await axios.post(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/patient-visits/`,
+            {
+              patient: data.patient,
+              visit_type: 'ROUTINE_CHECKUP',
+              chief_complaint: 'Vital signs recording',
+              status: 'completed'
+            },
+            getAuthConfig()
+          );
+          
+          visitId = visitResponse.data.data?.id || visitResponse.data.id;
+          console.log('Created implicit visit:', visitId);
+        } catch (visitErr) {
+          console.error('Failed to create implicit visit for vital signs:', visitErr);
+          throw new Error('Failed to create a visit for these vital signs');
+        }
+      }
+      
+      // Now create the vital signs with the visit ID
+      const updatedData = { ...data, visit: visitId };
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/records/vital-signs`, 
-        data, 
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/vital-signs/`, 
+        updatedData, 
         getAuthConfig()
       );
       
       // Update the records list if we have records already loaded
       if (records.length > 0) {
-        setRecords([response.data.record, ...records]);
+        // Backend returns data in a nested data property
+        const newRecord = response.data.data || response.data;
+        setRecords([newRecord, ...records]);
       }
       
       setLoading(false);
-      return response.data.record;
+      // Return the created record data
+      return response.data.data || response.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create vital signs record');
       setLoading(false);
@@ -274,10 +410,9 @@ export const RecordProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await axios.patch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/records/${id}/status`, 
-        { status }, 
+       const response = await axios.patch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/records/${id}/status`, 
+        { status },
         getAuthConfig()
       );
       
@@ -309,7 +444,7 @@ export const RecordProvider = ({ children }) => {
       setError(null);
       
       const response = await axios.delete(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/records/${id}`, 
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ehr/records/${id}`, 
         getAuthConfig()
       );
       

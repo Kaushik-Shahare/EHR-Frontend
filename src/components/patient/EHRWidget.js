@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import documentService from '@/services/documentService';
 
 export default function EHRWidget({
   patientName,
@@ -8,95 +9,49 @@ export default function EHRWidget({
 }) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [expandedRecord, setExpandedRecord] = useState(null);
+  const [filteredRecords, setFilteredRecords] = useState([]);
+  const [downloadingDoc, setDownloadingDoc] = useState(null);
   
-  // Sample records if none provided
-  const patientRecords = records.length > 0 ? records : [
-    {
-      id: '1',
-      date: 'May 15, 2025',
-      type: 'visit',
-      title: 'Annual Physical Examination',
-      provider: 'Dr. Sarah Reynolds',
-      description: 'Routine annual checkup with standard labs',
-      details: 'Patient is in good overall health. Blood tests show normal values. Recommended to continue current medications.',
-      status: 'completed',
-      documents: [
-        {name: 'Physical Examination Report', type: 'PDF'},
-        {name: 'Lab Results', type: 'PDF'}
-      ]
-    },
-    {
-      id: '2',
-      date: 'March 3, 2025',
-      type: 'visit',
-      title: 'Acute Bronchitis',
-      provider: 'Dr. Michael Wong',
-      description: 'Evaluation and treatment for respiratory infection',
-      details: 'Patient presented with cough, low-grade fever, and chest discomfort. Diagnosed with acute bronchitis. Prescribed antibiotics and cough suppressant.',
-      status: 'completed'
-    },
-    {
-      id: '3',
-      date: 'Nov 12, 2024',
-      type: 'surgery',
-      title: 'Arthroscopic Knee Surgery',
-      provider: 'Dr. James Martinez',
-      description: 'Arthroscopic repair of torn meniscus',
-      details: 'Patient underwent successful arthroscopic surgery to repair medial meniscus tear. Post-operative course uncomplicated. Physical therapy recommended for 8 weeks.',
-      status: 'completed',
-      documents: [
-        {name: 'Surgical Report', type: 'PDF'},
-        {name: 'Post-op Instructions', type: 'PDF'},
-        {name: 'MRI Images', type: 'DICOM'}
-      ]
-    },
-    {
-      id: '4',
-      date: 'Oct 5, 2024',
-      type: 'imaging',
-      title: 'MRI Right Knee',
-      provider: 'Radiology Associates',
-      description: 'MRI scan to evaluate knee pain and instability',
-      details: 'MRI revealed medial meniscus tear with mild degenerative changes. No ligament tears identified.',
-      status: 'completed',
-      documents: [
-        {name: 'MRI Report', type: 'PDF'},
-        {name: 'MRI Images', type: 'DICOM'}
-      ]
-    },
-    {
-      id: '5',
-      date: 'July 22, 2024',
-      type: 'lab',
-      title: 'Complete Blood Panel',
-      provider: 'MedLabs Diagnostics',
-      description: 'Routine blood work including CBC, lipid panel, and metabolic panel',
-      details: 'All values within normal range except slightly elevated LDL cholesterol (135 mg/dL). Recommended dietary changes.',
-      status: 'completed',
-      documents: [
-        {name: 'Lab Results', type: 'PDF'}
-      ]
-    },
-    {
-      id: '6',
-      date: 'July 15, 2024',
-      type: 'prescription',
-      title: 'Albuterol Inhaler Renewal',
-      provider: 'Dr. Sarah Reynolds',
-      description: 'Renewal of asthma medication',
-      details: 'Prescription for Albuterol Inhaler (90mcg) - 200 doses. Use as needed for asthma symptoms.',
-      status: 'completed'
-    },
-    {
-      id: '7',
-      date: 'Aug 10, 2025',
-      type: 'visit',
-      title: 'Follow-up Appointment',
-      provider: 'Dr. Sarah Reynolds',
-      description: 'Follow-up to discuss lab results and medication efficacy',
-      status: 'scheduled'
+  // Format dates properly
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  };
+  
+  // Use the provided records and format dates
+  useEffect(() => {
+    // Format dates and ensure consistent structure
+    const processedRecords = records.map(record => ({
+      ...record,
+      formattedDate: formatDate(record.date),
+      documents: record.documents || []
+    }));
+    setFilteredRecords(processedRecords);
+  }, [records]);
+  
+  // Handle document download
+  const handleDownloadDocument = async (docId, docName) => {
+    try {
+      setDownloadingDoc(docId);
+      await documentService.downloadDocument(docId, docName);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      alert('Failed to download document. Please try again.');
+    } finally {
+      setDownloadingDoc(null);
     }
-  ];
+  };
+  
+  // Apply filter whenever activeFilter changes
+  useEffect(() => {
+    if (activeFilter === 'all') {
+      setFilteredRecords(records);
+    } else {
+      const filtered = records.filter(record => record.type === activeFilter);
+      setFilteredRecords(filtered);
+    }
+  }, [activeFilter, records]);
   
   const getTypeIcon = (type) => {
     switch (type) {
@@ -144,21 +99,26 @@ export default function EHRWidget({
       case 'completed':
         return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Completed</span>;
       case 'scheduled':
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Scheduled</span>;
+      case 'checked_in':
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">{status === 'checked_in' ? 'Checked In' : 'Scheduled'}</span>;
+      case 'in_progress':
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">In Progress</span>;
+      case 'ready_for_checkout':
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">Ready for Checkout</span>;
       case 'cancelled':
         return <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Cancelled</span>;
       default:
-        return null;
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{status || 'Unknown'}</span>;
     }
   };
 
-  const filteredRecords = activeFilter === 'all' 
-    ? patientRecords 
-    : patientRecords.filter(record => record.type === activeFilter);
-
-  const sortedRecords = [...filteredRecords].sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  // Sort records by date (newest first)
+  const sortedRecords = [...filteredRecords].sort((a, b) => {
+    // If either date is invalid, use current date as fallback
+    const dateA = a.date ? new Date(a.date) : new Date();
+    const dateB = b.date ? new Date(b.date) : new Date();
+    return dateB.getTime() - dateA.getTime();
+  });
 
   const toggleRecordDetails = (id) => {
     setExpandedRecord(expandedRecord === id ? null : id);
@@ -184,7 +144,7 @@ export default function EHRWidget({
             onClick={() => setActiveFilter('all')}
             className={`px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
               activeFilter === 'all' 
-                ? 'bg-doctorTeal text-white' 
+                ? 'bg-doctorTeal text-black' 
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
@@ -194,7 +154,7 @@ export default function EHRWidget({
             onClick={() => setActiveFilter('visit')}
             className={`px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
               activeFilter === 'visit' 
-                ? 'bg-blue-600 text-white' 
+                ? 'bg-blue-600 text-black' 
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
@@ -207,7 +167,7 @@ export default function EHRWidget({
             onClick={() => setActiveFilter('surgery')}
             className={`px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
               activeFilter === 'surgery' 
-                ? 'bg-red-600 text-white' 
+                ? 'bg-red-600 text-black' 
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
@@ -220,7 +180,7 @@ export default function EHRWidget({
             onClick={() => setActiveFilter('lab')}
             className={`px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
               activeFilter === 'lab' 
-                ? 'bg-purple-600 text-white' 
+                ? 'bg-purple-600 text-black' 
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
@@ -233,7 +193,7 @@ export default function EHRWidget({
             onClick={() => setActiveFilter('imaging')}
             className={`px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
               activeFilter === 'imaging' 
-                ? 'bg-indigo-600 text-white' 
+                ? 'bg-indigo-600 text-black' 
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
@@ -246,7 +206,7 @@ export default function EHRWidget({
             onClick={() => setActiveFilter('prescription')}
             className={`px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
               activeFilter === 'prescription' 
-                ? 'bg-green-600 text-white' 
+                ? 'bg-green-600 text-black' 
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
@@ -370,11 +330,20 @@ export default function EHRWidget({
                                     <button 
                                       key={idx} 
                                       className="flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDownloadDocument(doc.id, doc.name);
+                                      }}
                                     >
                                       <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                       </svg>
                                       {doc.name}
+                                      {downloadingDoc === doc.id && (
+                                        <svg className="w-4 h-4 ml-2 animate-spin text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                      )}
                                     </button>
                                   ))}
                                 </div>

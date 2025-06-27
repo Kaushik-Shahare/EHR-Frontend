@@ -37,6 +37,14 @@ api.interceptors.request.use(
 // Add response interceptor for debugging
 api.interceptors.response.use(
   (response) => {
+    // Log successful responses for debugging
+    console.log(`API Success Response from: ${response.config.url}`, {
+      status: response.status,
+      dataType: typeof response.data,
+      isArray: Array.isArray(response.data),
+      hasData: response.data && typeof response.data === 'object' ? 'data' in response.data : false,
+      keys: response.data && typeof response.data === 'object' ? Object.keys(response.data) : []
+    });
     return response;
   },
   (error) => {
