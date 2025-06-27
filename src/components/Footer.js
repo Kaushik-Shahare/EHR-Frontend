@@ -6,7 +6,7 @@ import Logo from './Logo';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-800 text-white py-8 px-4">
+    <footer className="bg-gray-800 text-black py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Logo and Description */}
@@ -22,17 +22,17 @@ const Footer = () => {
             <h3 className="text-lg font-bold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/" className="text-gray-400 hover:text-white">
+                <Link href="/" className="text-gray-400 hover:text-black">
                   Home
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard" className="text-gray-400 hover:text-white">
+                <Link href="/dashboard" className="text-gray-400 hover:text-black">
                   Dashboard
                 </Link>
               </li>
               <li>
-                <Link href="/profile" className="text-gray-400 hover:text-white">
+                <Link href="/profile" className="text-gray-400 hover:text-black">
                   Profile
                 </Link>
               </li>
@@ -44,17 +44,17 @@ const Footer = () => {
             <h3 className="text-lg font-bold mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="text-gray-400 hover:text-white">
+                <Link href="#" className="text-gray-400 hover:text-black">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-gray-400 hover:text-white">
+                <Link href="#" className="text-gray-400 hover:text-black">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-gray-400 hover:text-white">
+                <Link href="#" className="text-gray-400 hover:text-black">
                   HIPAA Compliance
                 </Link>
               </li>

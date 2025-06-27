@@ -18,8 +18,8 @@ const AuthLayout = ({ children, title, subtitle, linkText, linkUrl }) => {
             priority
           />
           <div className="absolute inset-0 bg-blue-900 bg-opacity-40 flex flex-col justify-end p-12">
-            <h2 className="text-4xl font-bold text-white mb-4">EHR System</h2>
-            <p className="text-xl text-white mb-8">Advanced electronic health record management for healthcare professionals</p>
+            <h2 className="text-4xl font-bold text-black mb-4">EHR System</h2>
+            <p className="text-xl text-black mb-8">Advanced electronic health record management for healthcare professionals</p>
           </div>
         </div>
       </div>
