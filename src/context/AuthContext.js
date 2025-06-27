@@ -94,9 +94,9 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       console.log('User logged in:', res);
       if (res.user.user_type === 'Doctor') {
-        router.push('/dashboard');
+        router.push('/doctor');
       } else if (res.user.user_type === 'Patient') {
-        router.push('/profile');
+        router.push('/dashboard');
       }else{
         router.push('/admin/dashboard'); // Default redirect
       }

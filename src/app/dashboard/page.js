@@ -19,6 +19,16 @@ export default function Dashboard() {
   const [recentVisits, setRecentVisits] = useState([]);
   const [loadingRecords, setLoadingRecords] = useState(false);
   const [error, setError] = useState(null);
+    useEffect(() => {
+      if (typeof window !== "undefined") {
+        // Check if the user is logged in
+        const token = localStorage.getItem("accesstoken");
+        if (!token) {
+          // Redirect to login page if not logged in
+          window.location.href = "/login";
+        }
+      }
+    }, []);
 
   useEffect(() => {
     console.log("user from dashboard:", user);

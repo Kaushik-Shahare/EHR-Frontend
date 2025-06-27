@@ -18,16 +18,16 @@ export default function DoctorDashboard() {
     }
   }, [isAuthenticated, user]);
 
-  // useEffect(()=>{
-  //   console.log("user from doctor:",user);
-  //   if(!user){
-  //     router.push('/login');
-  //   }
-  //   if(!isAuthenticated) {
-  //     router.push('/login');
-  //   }
-  // })
-  
+    useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Check if the user is logged in
+      const token = localStorage.getItem("accesstoken");
+      if (!token) {
+        // Redirect to login page if not logged in
+        window.location.href = "/login";
+      }
+    }
+  }, []);
   // Log visits whenever they change
   useEffect(() => {
     console.log("Current visits state:", visits);
