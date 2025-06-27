@@ -131,7 +131,7 @@ export default function DoctorDashboard() {
   return (
     <main className="p-4 md:p-6 max-w-screen-2xl mx-auto">
       <h1 className='text-4xl font-bold mb-6'>
-        Welcome Dr. {user?.name || user?.email?.split('@')[0] || 'Doctor'}
+        Welcome {`Dr. ${user?.profile?.name}`|| 'Doctor'}
       </h1>
       
       {/* Today's Appointments Section */}

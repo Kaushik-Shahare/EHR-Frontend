@@ -82,6 +82,7 @@ const authService = {
       }
       
       const userData = response.data.data || response.data;
+
       
       return {
         user: userData,
