@@ -76,8 +76,7 @@ export const AuthProvider = ({ children }) => {
       setUser(res.user);
       setHasProfile(res.hasProfile);
       setLoading(false);
-      console.log('User logged in:', res.user.user_type);
-      // Redirect based on profile status
+      console.log('User logged in:', res);
       if (res.user.user_type === 'Doctor') {
         router.push('/dashboard');
       } else if (res.user.user_type === 'Patient') {

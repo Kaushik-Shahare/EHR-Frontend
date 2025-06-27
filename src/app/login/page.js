@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../context/AuthContext';
 import AuthLayout from '../../components/AuthLayout';
@@ -13,6 +13,18 @@ export default function Login() {
   const onSubmit = async (data) => {
     await login(data.email, data.password);
   };
+
+  useEffect(() => {
+      if(typeof window !== "undefined") {
+          // Check if the user is logged in
+          const token = localStorage.getItem("accesstoken");
+          if (token) {
+              // Redirect to login page if not logged in
+              window.location.href = "/admin/dashboard";
+          }
+      }
+    }
+    , []);
 
   return (
     <AuthLayout

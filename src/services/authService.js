@@ -31,13 +31,13 @@ const authService = {
   async login(email, password) {
     try {
       const response = await api.post('/api/auth/login/', { email, password });
-      
+      console.log("=============================================", response.data)
       // Extract tokens and user data from backend response format
       const { refresh, access, user } = response.data.data;
       
       // Save tokens
-      localStorage.setItem('token', access);
-      localStorage.setItem('refreshToken', refresh);
+      localStorage.setItem('accesstoken', response.data.data.access);
+      localStorage.setItem('refreshToken', response.data.data.refresh);
       
       // Return user data and tokens
       return {

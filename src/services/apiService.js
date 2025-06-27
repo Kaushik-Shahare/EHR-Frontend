@@ -10,13 +10,14 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // <-- Important for sending cookies
 });
 
 // Add request interceptor for authentication
 api.interceptors.request.use(
   (config) => {
     // Get token from cookie first, then fallback to localStorage
-    const token = Cookies.get('token') || localStorage.getItem('token') || '';
+    const token = Cookies.get('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,5 +27,27 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+
+export const NfcTap = async (data) => {
+  try {
+    const response = await api.post(`/api/ehr/nfc/tap/${data}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error tapping NFC:', error);
+    throw error.response?.data || { message: 'Failed to tap NFC' };
+  }
+};
+
+
+export const NfcGetdocuments = async (data) => {
+  try {
+    const response = await api.post(`/api/ehr/nfc/read/${data}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error reading NFC:', error);
+    throw error.response?.data || { message: 'Failed to read NFC' };
+  }
+};
 
 export default api;

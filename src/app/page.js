@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '';
-import { Box } from '@/components/ui/Box';
+
+import { useAuth } from '@/context/AuthContext';
+import Box from '@/components/Box';
 
 export default function LandingPage() {
   const router = useRouter();
