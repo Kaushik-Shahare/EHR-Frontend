@@ -225,6 +225,10 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleInsuranceClick = ()=>{
+    window.location.href = '/admin/dashboard/insurance-check';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -432,8 +436,8 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-teal-600 hover:text-teal-900 mr-3">
-                          View
+                        <button onClick={handleInsuranceClick} className="text-teal-600 hover:text-teal-900 mr-3">
+                          Validate Insurance
                         </button>
                         <button 
                           onClick={() => handleEditVisit(patient)}
