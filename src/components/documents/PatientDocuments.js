@@ -1,9 +1,10 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 
-const PatientDocuments = ({ documentsUrl }) => {
+const PatientDocuments = ({ documentsUrl, documentsData }) => {
     console.log('PatientDocuments component initialized with documentsUrl:', documentsUrl);
     const [documents, setDocuments] = useState([]);
+    const [patientInfo, setPatientInfo] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -19,14 +20,34 @@ const PatientDocuments = ({ documentsUrl }) => {
         const response = await axios.get(fullUrl);
         console.log('Documents fetched successfully:', response);
         
-        // Check if the response has a data property that contains the documents array
-        const documentsList = response.data.data || response.data || [];
-        setDocuments(documentsList);
+        // Extract documents from the nested structure in the API response
+        if (response.data && response.data.data) {
+            // Get documents array from the response
+            const documentsList = response.data.data.documents || [];
+            // Also track document count if available
+            const documentCount = response.data.data.document_count || 0;
+            console.log(`Retrieved ${documentCount} documents`);
+            
+            // Check if there's a documents_url in the response to fetch additional documents
+            const responseDocumentsUrl = response.data.data.documents_url;
+            if (responseDocumentsUrl && responseDocumentsUrl !== documentsUrl) {
+                console.log('Found documents_url in response:', responseDocumentsUrl);
+                // We could use this URL for pagination or additional document types
+                // For now, we'll just log it
+            }
+            
+            setDocuments(documentsList);
+        } else {
+            console.warn('Unexpected response format:', response.data);
+            setDocuments([]);
+        }
         setLoading(false);
     };
 
     useEffect(() => {
-        fetchDocuments();
+        if (documentsUrl) {
+            fetchDocuments();
+        }
     }, [documentsUrl]);
 
     return (
@@ -75,7 +96,20 @@ const PatientDocuments = ({ documentsUrl }) => {
                         </div>
                     ))
                 ) : (
-                    <p className="text-gray-600 py-4">No documents available</p>
+                    <div className="py-4">
+                        <p className="text-gray-600">No documents available</p>
+                        {documents && documents.patient && (
+                            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                                <p className="font-medium text-sm">Patient: {documents.patient?.profile?.name}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Access granted with {documents.session?.access_level || 'Limited Access'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    Expires: {new Date(documents.session?.expires_at).toLocaleTimeString()}
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
         </div>

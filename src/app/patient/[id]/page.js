@@ -29,9 +29,13 @@ export default function PatientDetailPage({ params }) {
       const sessionToken = response.data.data.session.session_token;
       const userData = response.data.data;
       console.log("Data fetched from NFC tap:", response.data);
-      setUser(data.data);
-      console.log("api responce:", response.data);
-      setDocumentsUrl(response.data.data.documents_url);
+      setUser(userData);
+      console.log("api response:", response.data);
+      // Set documents URL if available in the response
+      if (userData.documents_url) {
+        setDocumentsUrl(userData.documents_url);
+        console.log("Documents URL set:", userData.documents_url);
+      }
       console.log("user data:", userData);
       let sessionTokens = {};
       const existingTokens = localStorage.getItem('sessionTokens');
@@ -388,7 +392,7 @@ export default function PatientDetailPage({ params }) {
             
             {/* Right Column - Documents */}
             <div className="lg:col-span-3">
-              <PatientDocuments documentsUrl={documentsUrl} />
+              <PatientDocuments documentsUrl={user?.documents_url} />
             </div>
           </div>
         </div>
