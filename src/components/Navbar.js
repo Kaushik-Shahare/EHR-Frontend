@@ -15,17 +15,6 @@ const Navbar = ({ title }) => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef(null);
   
-  // Debug user state
-  useEffect(() => {
-    console.log('Navbar - Auth state:', { 
-      isAuthenticated, 
-      hasUser: !!user, 
-      userName: user?.name, 
-      userEmail: user?.email,
-      hasProfile
-    });
-  }, [user, isAuthenticated, hasProfile]);
-  
   // Check if we're on the landing page
   const isLandingPage = pathname === '/';
   

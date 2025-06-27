@@ -25,28 +25,15 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }, []);
-  
-  // Additional effect to monitor user status for debugging
-  useEffect(() => {
-    console.log('AuthContext: User state updated', { 
-      isUserDefined: !!user,
-      userObject: user 
-    });
-  }, [user]);
 
   // Load user data with the token
   const loadUser = async (token) => {
     try {
-      console.log('AuthContext: Loading user data with token');
-      // Use real API service
       const res = await authService.loadUser();
-      console.log('AuthContext: User data loaded successfully', res);
       setUser(res.user);
       setHasProfile(res.hasProfile);
       setLoading(false);
     } catch (err) {
-      console.error('AuthContext: Failed to load user data', err);
-      // Clean up any invalid tokens
       localStorage.removeItem('token');
       Cookies.remove('token');
       localStorage.removeItem('refreshToken');

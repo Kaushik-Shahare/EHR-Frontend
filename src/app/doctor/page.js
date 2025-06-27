@@ -188,11 +188,6 @@ export default function DoctorDashboard() {
                 </tr>
               ) : (
                 visits.map((visit) => {
-                  // Debugging what visit.patient actually is
-                  console.log(`Visit ${visit.id} - Raw patient data:`, visit.patient, typeof visit.patient);
-                  
-                  // Handle the case where visit.patient is directly the numeric ID
-                  // OR the case where it's an object with an id property
                   const patientId = typeof visit.patient === 'object' 
                     ? visit.patient?.id 
                     : typeof visit.patient === 'number' || typeof visit.patient === 'string'
@@ -202,7 +197,7 @@ export default function DoctorDashboard() {
                   const patientName = (typeof visit.patient === 'object' ? visit.patient.name : null) || 
                                      visit.patient_name || 'Patient';
                   
-                  console.log(`Visit ${visit.id} - Patient ID: ${patientId}, Name: ${patientName}`);
+                  // console.log(`Visit ${visit.id} - Patient ID: ${patientId}, Name: ${patientName}`);
                   
                   return (
                     <tr 

@@ -83,8 +83,6 @@ const authService = {
       
       const userData = response.data.data || response.data;
       
-      console.log('Extracted user data:', userData); // Debug the extracted data
-      
       return {
         user: userData,
         hasProfile: !!userData.profile,
