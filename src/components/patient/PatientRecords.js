@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import ehrService from '../../services/ehrService';
 import nfcService from '../../services/nfcService';
 
@@ -21,6 +22,7 @@ const PatientRecords = ({ patientId }) => {
   const [patientRecords, setPatientRecords] = useState([]);
   const [loading, setLoading] = useState(true); // Start with loading true
   const [error, setError] = useState(null);
+  const router = useRouter();
 
   const extractRecordsData = (responseData) => {
     console.log("Extracting records from data structure:", responseData);
@@ -204,11 +206,20 @@ const PatientRecords = ({ patientId }) => {
               // Create a safe reference to avoid null/undefined errors
               const safeRecord = record || {};
               
+              // Navigate to the record detail when clicked
+              const handleRecordClick = () => {
+                router.push(`/patient/record/${safeRecord.id}`);
+              };
+              
               return (
-                <div key={safeRecord.id || index} className={`${index !== patientRecords.length - 1 ? "border-b border-gray-200 pb-4 mb-4" : ""}`}>
+                <div 
+                  key={safeRecord.id || index} 
+                  className={`${index !== patientRecords.length - 1 ? "border-b border-gray-200 pb-4 mb-4" : ""} cursor-pointer hover:bg-gray-50 transition-colors rounded-lg p-2 -m-2`}
+                  onClick={handleRecordClick}
+                >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-medium">
+                      <h4 className="font-medium text-blue-600">
                         Visit {safeRecord.id || `Record-${index}`}
                       </h4>
                       <div className="text-sm text-gray-600">

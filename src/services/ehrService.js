@@ -81,6 +81,17 @@ const ehrService = {
     return api.post('/api/ehr/lab-results/', labResultData, {
       params: { session_token: sessionToken }
     });
+  },
+
+  /**
+   * Fetch a single patient visit record by ID
+   * @param {string} sessionToken - The NFC session token
+   * @param {string|number} visitId - The visit ID
+   * @returns {Promise} - API response with detailed visit data
+   */
+  getPatientVisitById: async (sessionToken, visitId) => {
+    console.log(`Fetching patient visit details for visit ID ${visitId}`);
+    return api.get(`/api/ehr/patient-visits/${visitId}/`);
   }
 };
 
