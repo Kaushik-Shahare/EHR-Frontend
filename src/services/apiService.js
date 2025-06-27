@@ -93,7 +93,7 @@ export const getDoctors = async () => {
   }
 };
 
-export const createVisit= async (data) => {
+export const createVisit = async (data) => {
   try {
     const response = await api.post('/api/ehr/patient-visits/', data);
     return response.data;
@@ -102,4 +102,26 @@ export const createVisit= async (data) => {
     throw error.response?.data || { message: 'Failed to create visit' };
   }
 };
+
+
+export const getPatientVisits = async (patientId) => {
+  try {
+    const response = await api.get(`/api/ehr/patient-visits/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching patient visits:', error);
+    throw error.response?.data || { message: 'Failed to fetch patient visits' };
+  }
+};
+
+export const updatePatientVisit = async (visitId, data) => {
+  try {
+    const response = await api.patch(`/api/ehr/patient-visits/${visitId}/`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating patient visit:', error);
+    throw error.response?.data || { message: 'Failed to update patient visit' };
+  }
+};
+
 export default api;
