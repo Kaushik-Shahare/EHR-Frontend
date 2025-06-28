@@ -124,4 +124,57 @@ export const updatePatientVisit = async (visitId, data) => {
   }
 };
 
+export const getAllPoliciesofPatient = async (id) => {
+  try {
+    const response = await api.get(`/api/insurance/policies/patient_policies/?patient_id=${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching insurance policies:', error);
+    throw error.response?.data || { message: 'Failed to fetch insurance policies' };
+  }
+};
+
+
+export const generateInsurancePolicy = async (data) => {
+  try {
+    const response = await api.post('/api/insurance/forms/auto_create_from_visit/', data);
+    return response.data; 
+  } catch (error) {
+    console.error('Error generating insurance policy:', error);
+    throw error.response?.data || { message: 'Failed to generate insurance policy' };
+  }
+};
+
+export const verifyClaim = async (data) => {
+  try {
+    const response = await api.post(`/api/ai/verification/${data}/`);
+    return response.data; 
+  } catch (error) {
+    console.error('Error verifying claim:', error);
+    throw error.response?.data || { message: 'Failed to verify claim' };
+  }
+}; 
+
+
+export const getResult = async (data) => {
+  try {
+    const response = await api.get(`/api/ai/verification/${data}/result`);
+    return response.data; 
+  } catch (error) {
+    console.error('Error fetching verification result:', error);
+    throw error.response?.data || { message: 'Failed to fetch verification result' };
+  }
+};
+
+
+export const getInsuranceDetails = async (id) => {
+  try {
+    const response = await api.get(`/api/insurance/forms/visit_forms/?visit_id=${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching insurance details:', error);
+    throw error.response?.data || { message: 'Failed to fetch insurance details' };
+  }
+};
+
 export default api;

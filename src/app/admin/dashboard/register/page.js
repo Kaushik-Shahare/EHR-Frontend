@@ -86,6 +86,7 @@ export default function HospitalDashboard() {
 
   // Prefill form when patient data is available
   useEffect(() => {
+    // console.log("Patient data received:=============================", patient);
     if (patient && patient.profile) {
       const profile = patient.profile;
       setFormData((prev) => ({
@@ -117,8 +118,8 @@ export default function HospitalDashboard() {
         emergencyContactPhone: profile.emergency_contact?.phone_number || "",
 
         // Insurance
-        insuranceProvider: profile.insurance?.provider || "",
-        policyNumber: profile.insurance?.policy_number || "",
+        insuranceProvider: profile.insurance?.provider ,
+        policyNumber: profile.insurance?.policy_number ,
       }));
     }
   }, [patient]);
@@ -130,43 +131,43 @@ export default function HospitalDashboard() {
       ...formData,
     };
     setPatients((prev) => [...prev, newPatient]);
-    setFormData({
-      // Basic Information
-      name: "",
-      email: "",
-      phone: "",
-      dateOfBirth: "",
-      age: "",
-      gender: "",
-      location: "",
-      bloodGroup: "",
-      heightCm: "",
-      weightKg: "",
-      maritalStatus: "",
+    // setFormData({
+    //   // Basic Information
+    //   name: "",
+    //   email: "",
+    //   phone: "",
+    //   dateOfBirth: "",
+    //   age: "",
+    //   gender: "",
+    //   location: "",
+    //   bloodGroup: "",
+    //   heightCm: "",
+    //   weightKg: "",
+    //   maritalStatus: "",
 
-      // Address Information
-      street: "",
-      area: "",
-      city: "",
-      state: "",
-      pincode: "",
-      country: "",
+    //   // Address Information
+    //   street: "",
+    //   area: "",
+    //   city: "",
+    //   state: "",
+    //   pincode: "",
+    //   country: "",
 
-      // Emergency Contact
-      emergencyContactName: "",
-      emergencyContactRelation: "",
-      emergencyContactPhone: "",
+    //   // Emergency Contact
+    //   emergencyContactName: "",
+    //   emergencyContactRelation: "",
+    //   emergencyContactPhone: "",
 
-      // Insurance
-      insuranceProvider: "",
-      policyNumber: "",
+    //   // Insurance
+    //   insuranceProvider: "",
+    //   policyNumber: "",
 
-      // Appointment Information
-      appointmentDate: "",
-      appointmentTime: "",
-      doctor: "",
-      reason: "",
-    });
+    //   // Appointment Information
+    //   appointmentDate: "",
+    //   appointmentTime: "",
+    //   doctor: "",
+    //   reason: "",
+    // });
     const token = localStorage.getItem("session_token");
     // if(!token ){
     //   console.log("Token found:", token);
@@ -180,11 +181,11 @@ export default function HospitalDashboard() {
       session_token: token
     })
     
-    // if(res){
+    if(res){
 
-    //   alert("Patient registered successfully!");
-    //   window.location.href = "/admin/dashboard";
-    // }
+      alert("Patient registered successfully!");
+      window.location.href = "/admin/dashboard";
+    }
   };
 
   const filteredPatients = patients.filter(

@@ -225,8 +225,9 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleInsuranceClick = ()=>{
-    window.location.href = '/admin/dashboard/insurance-check';
+  const handleInsuranceClick = (patient)=>{
+    console.log("Patient ID for insurance check:", patient);
+    window.location.href = `/admin/dashboard/insurance-check?visited_id=${patient.id}&&patient_id=${patient.patientId}`;
   };
 
   return (
@@ -436,7 +437,7 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button onClick={handleInsuranceClick} className="text-teal-600 hover:text-teal-900 mr-3">
+                        <button onClick={()=>handleInsuranceClick(patient)} className="text-teal-600 hover:text-teal-900 mr-3">
                           Validate Insurance
                         </button>
                         <button 
