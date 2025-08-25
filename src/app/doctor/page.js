@@ -39,8 +39,6 @@ export default function DoctorDashboard() {
     setError(null);
     
     try {
-      // Remove NFC token checking code
-      
       // Make the API call to fetch visits
       const response = await api.get('/api/ehr/patient-visits/');
       console.log("Direct API response:", response.data);
@@ -193,9 +191,8 @@ export default function DoctorDashboard() {
                     : typeof visit.patient === 'number' || typeof visit.patient === 'string'
                       ? visit.patient
                       : null;
-                      
-                  const patientName = (typeof visit.patient === 'object' ? visit.patient.name : null) || 
-                                     visit.patient_name || 'Patient';
+
+                  const patientName = (typeof visit.patient === 'object' ? visit.patient.name : null) || visit.patient_name || 'Patient';
                   
                   // console.log(`Visit ${visit.id} - Patient ID: ${patientId}, Name: ${patientName}`);
                   
@@ -215,6 +212,8 @@ export default function DoctorDashboard() {
                         // Ensure we have a valid patient ID
                         if (patientId) {
                           console.log(`Navigating to patient detail page for ID: ${patientId}`);
+                          // Add visitId to localStorage so it can be retrieved on the patient page
+                          localStorage.setItem('currentVisitId', visit.id);
                           window.location.href = `/patient/${patientId}`;
                         } else {
                           console.error('Missing patient ID, cannot navigate');
@@ -222,6 +221,8 @@ export default function DoctorDashboard() {
                           const rawPatientValue = visit.patient;
                           if (rawPatientValue) {
                             console.log(`Trying alternative navigation using raw patient value: ${rawPatientValue}`);
+                            // Add visitId to localStorage so it can be retrieved on the patient page
+                            localStorage.setItem('currentVisitId', visit.id);
                             window.location.href = `/patient/${rawPatientValue}`;
                           }
                         }

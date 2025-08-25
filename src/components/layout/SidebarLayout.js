@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Logo from '@/components/Logo';
 
 import { 
   FaHome, 
@@ -61,12 +62,9 @@ export const SidebarLayout = ({ children }) => {
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         {/* Logo/Brand section */}
         <div className="h-16 flex items-center justify-start px-5 border-b border-gray-200">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-doctorTeal rounded-md flex items-center justify-center">
-              <span className=" font-bold text-lg">M</span>
-            </div>
-            <span className="font-bold text-xl text-gray-800">MedTrackr</span>
-          </div>
+          <Link href="/doctor">
+            <Logo size="small" />
+          </Link>
         </div>
         
         {/* Navigation section */}

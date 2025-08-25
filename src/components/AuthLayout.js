@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import Logo from './Logo';
 
 const AuthLayout = ({ children, title, subtitle, linkText, linkUrl }) => {
   return (
@@ -28,6 +29,7 @@ const AuthLayout = ({ children, title, subtitle, linkText, linkUrl }) => {
       <div className="w-full md:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-10">
+            <Logo size="large" className="mx-auto mb-6" />
             <h1 className="text-3xl font-bold text-gray-800 mb-2">{title}</h1>
             <p className="text-gray-600">{subtitle}</p>
           </div>

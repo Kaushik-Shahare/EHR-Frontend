@@ -1,7 +1,7 @@
 'use client';
 
+import Image from 'next/image';
 import React from 'react';
-import { BsHeartPulse } from 'react-icons/bs';
 
 const Logo = ({ size = 'normal', className = '' }) => {
   // Define text size based on the size prop
@@ -10,10 +10,13 @@ const Logo = ({ size = 'normal', className = '' }) => {
   
   return (
     <div className={`flex items-center ${className}`}>
-      <BsHeartPulse className={`${iconSizeClass} text-blue-500 mr-2`} />
-      <h1 className={`${textSizeClass} font-bold text-blue-500`}>
-        MedAudit
-      </h1>
+      <Image
+        src="/logo.png"
+        alt="EHR Logo"
+        width={170}
+        height={50}
+        className={`mr-2 ${iconSizeClass}`}
+      />
     </div>
   );
 };

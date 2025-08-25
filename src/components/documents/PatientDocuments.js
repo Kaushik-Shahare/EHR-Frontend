@@ -184,7 +184,7 @@ const PatientDocuments = ({ documentsUrl, sessionToken }) => {
     }, [documentsUrl]);
 
     return (
-        <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 max-h-screen overflow-y-scroll">
             <div className="bg-gradient-to-r from-doctorTeal to-doctorTeal/90 px-4 py-3 flex justify-between items-center">
                 <h3 className="text-lg font-bold text-black">Documents</h3>
                 <span className="text-sm bg-white/60 px-2 py-0.5 rounded text-black">

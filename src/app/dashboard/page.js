@@ -489,7 +489,7 @@ export default function Dashboard() {
                   </div>
                 </Link>
 
-                <Link href="/emergency-access">
+                <Link href="/profile">
                   <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-xl p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all duration-200 group">
                     <div className="bg-white rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4 shadow-sm border border-red-100 group-hover:bg-red-500 group-hover:text-black transition-colors duration-200">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600 group-hover:text-black transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">

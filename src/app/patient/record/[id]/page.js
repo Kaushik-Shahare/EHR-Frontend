@@ -4,7 +4,6 @@ import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import MainLayout from "../../../../components/MainLayout";
 import ehrService from "../../../../services/ehrService";
-import nfcService from "../../../../services/nfcService";
 
 // Helper function for formatting dates consistently
 const formatDate = (dateString) => {
@@ -36,8 +35,6 @@ export default function PatientRecordDetail({ params }) {
     setError(null);
 
     try {
-      // Since we don't know the patientId from this screen initially, we'll try to get the
-      // session token from localStorage by iterating through stored tokens
       const storedTokens = JSON.parse(
         localStorage.getItem("sessionTokens") || "{}"
       );
@@ -309,7 +306,7 @@ export default function PatientRecordDetail({ params }) {
               {/* Vitals */}
               <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
                 <div className="bg-gradient-to-r bg-blue-500 from-doctorTeal to-doctorTeal/90 px-4 py-3">
-                  <h2 className="text-lg font-bold text-black">Vital Signs</h2>
+                  <h2 className="text-lg font-bold text-white">Vital Signs</h2>
                 </div>
                 <div className="p-4">
                   {visitData.vitals && visitData.vitals.length > 0 ? (
@@ -435,7 +432,7 @@ export default function PatientRecordDetail({ params }) {
               {/* Prescriptions */}
               <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
                 <div className="bg-gradient-to-r bg-blue-500 from-doctorTeal to-doctorTeal/90 px-4 py-3">
-                  <h2 className="text-lg font-bold text-black">
+                  <h2 className="text-lg font-bold text-white">
                     Prescriptions
                   </h2>
                 </div>
@@ -503,7 +500,7 @@ export default function PatientRecordDetail({ params }) {
               {/* Charges */}
               <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
                 <div className="bg-gradient-to-r bg-blue-500 from-doctorTeal to-doctorTeal/90 px-4 py-3">
-                  <h2 className="text-lg font-bold text-black">Charges</h2>
+                  <h2 className="text-lg font-bold text-white">Charges</h2>
                 </div>
                 <div className="p-4">
                   {visitData.charges && visitData.charges.length > 0 ? (
@@ -619,7 +616,7 @@ export default function PatientRecordDetail({ params }) {
               {/* Lab Results */}
               <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
                 <div className="bg-gradient-to-r bg-blue-500 from-doctorTeal to-doctorTeal/90 px-4 py-3">
-                  <h2 className="text-lg font-bold text-black">Lab Results</h2>
+                  <h2 className="text-lg font-bold text-white">Lab Results</h2>
                 </div>
                 <div className="p-4">
                   {visitData.lab_results && visitData.lab_results.length > 0 ? (
