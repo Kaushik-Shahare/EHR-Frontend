@@ -2,7 +2,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 // Use the backend URL from environment variables
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://medaudit.onrender.com';
 
 // Create an axios instance with default config
 const api = axios.create({

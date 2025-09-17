@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 import { 
   FaHome, 
@@ -17,10 +18,59 @@ import {
 export const SidebarLayout = ({ children }) => {
   const pathname = usePathname();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const { user } = useAuth(); // Get user data from auth context
   
   // Toggle mobile sidebar
   const toggleMobileSidebar = () => {
     setIsMobileSidebarOpen(!isMobileSidebarOpen);
+  };
+
+  // Helper function to get user initials
+  const getUserInitials = () => {
+    if (user?.profile?.name) {
+      return user.profile.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    } else if (user?.email) {
+      return user.email.slice(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
+
+  // Helper function to get user display name
+  const getUserDisplayName = () => {
+    if (user?.profile?.name) {
+      return user.profile.name;
+    } else if (user?.email) {
+      return user.email;
+    }
+    return 'User';
+  };
+
+  // Helper function to get user role display
+  const getUserRole = () => {
+    // Check user_type at the root level first, then in profile
+    const userType = user?.user_type || user?.profile?.user_type;
+    
+    if (userType === 'Doctor') {
+      return 'Doctor';
+    } else if (userType === 'Patient') {
+      return 'Patient';
+    } else if (userType) {
+      return userType;
+    }
+    return 'User';
+  };
+
+  // Helper function to get appropriate profile link
+  const getProfileLink = () => {
+    // Check user_type at the root level first, then in profile
+    const userType = user?.user_type || user?.profile?.user_type;
+    
+    if (userType === 'Doctor') {
+      return '/doctor/profile';
+    } else if (userType === 'Patient') {
+      return '/profile';
+    }
+    return '/profile'; // Default fallback
   };
   
   // Navigation links configuration
@@ -120,14 +170,20 @@ export const SidebarLayout = ({ children }) => {
         
         {/* User profile section */}
         <div className="border-t border-gray-200 p-4">
-          <Link href="/doctor/profile">
+          <Link href={getProfileLink()}>
             <div className="flex items-center gap-3 hover:bg-gray-100 p-2 rounded-lg transition-all cursor-pointer">
               <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                <span className="font-medium text-gray-600">DR</span>
+                <span className="font-medium text-gray-600">
+                  {getUserInitials()}
+                </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 truncate">Dr. Sarah Reynolds</p>
-                <p className="text-xs text-gray-500 truncate">Cardiologist</p>
+                <p className="font-medium text-gray-900 truncate">
+                  {getUserDisplayName()}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {getUserRole()}
+                </p>
               </div>
             </div>
           </Link>

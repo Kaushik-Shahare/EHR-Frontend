@@ -20,7 +20,7 @@ const Navbar = ({ title }) => {
     console.log('Navbar - Auth state:', { 
       isAuthenticated, 
       hasUser: !!user, 
-      userName: user?.name, 
+      userName: user?.profile.name, 
       userEmail: user?.email,
       hasProfile
     });
@@ -121,7 +121,7 @@ const Navbar = ({ title }) => {
                 >
                   <div className="w-10 h-10 bg-blue-600 text-black rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-md">
                     <span className="font-medium text-sm">
-                      {user.name ? user.name.charAt(0).toUpperCase() : (
+                      {user.profile.name ? user.profile.name.charAt(0).toUpperCase() : (
                         user.email ? user.email.charAt(0).toUpperCase() : 'U'
                       )}
                     </span>
@@ -133,7 +133,7 @@ const Navbar = ({ title }) => {
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-xl py-1 z-50 animate-fadeIn">
                     <div className="px-4 py-3 border-b border-gray-200">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {user.name || user.email}
+                        {user.profile.name || user.email}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
                         {user.email}
