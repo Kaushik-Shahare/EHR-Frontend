@@ -6,7 +6,9 @@ import PatientCheckIn from "@/components/PatientCheckIn";
 import SuccessModal from "@/components/SuccessModal";
 import { type } from "os";
 import { useUser } from "@/context/UserContext";
-import { createVisit, getDoctors } from "@/services/apiService";
+import { useAuth } from "@/context/AuthContext";
+import { createVisit, getDoctors, NfcTap } from "@/services/apiService";
+import adminService from "@/services/adminService";
 
 
 export default function HospitalDashboard() {
@@ -14,11 +16,18 @@ export default function HospitalDashboard() {
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPatient, setSelectedPatient] = useState(null);
-  const { patient } = useUser();
+  const { patient, card_id, sessionToken, updateSessionToken } = useUser();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const [doctors, setDoctors] = useState([]);
   const [selectDoctor, setSelectDoctor] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [registeredPatientData, setRegisteredPatientData] = useState(null);
+  const [cardInputMode, setCardInputMode] = useState("manual"); // "manual" or "nfc"
+  const [fetchingPatientData, setFetchingPatientData] = useState(false);
+  const [patientDataFound, setPatientDataFound] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [currentSessionToken, setCurrentSessionToken] = useState(null);
+  const [sessionActive, setSessionActive] = useState(false);
   const [formData, setFormData] = useState({
     // Basic Information
     name: "",
@@ -49,6 +58,9 @@ export default function HospitalDashboard() {
     // Insurance
     insuranceProvider: "",
     policyNumber: "",
+
+    // Card Information
+    cardId: "",
 
     // Appointment Information
     appointmentDate: "",
@@ -124,8 +136,13 @@ export default function HospitalDashboard() {
     }
   }, [patient]);
 
-  const handleSubmit =async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    try {
+      console.log("Form submission with card ID:", formData.cardId);
+      console.log("Full form data:", formData);
+    
     const newPatient = {
       id: Date.now().toString(),
       ...formData,
@@ -168,24 +185,62 @@ export default function HospitalDashboard() {
     //   doctor: "",
     //   reason: "",
     // });
-    const token = localStorage.getItem("session_token");
-    // if(!token ){
-    //   console.log("Token found:", token);
-    // }
-    console.log("Form Data to be sent:============================", doctors[0].id);
-    const res = await createVisit({
-      patient: patient.id,
-      attending_doctor: doctors[0].id,
-      visit_type: formData.reason,
-      reason_for_visit: formData.reason,
-      session_token: token
-    })
     
-    if(res){
-
-      alert("Patient registered successfully!");
+      // Determine which patient ID to use - from card lookup or from UserContext
+      let patientId = selectedPatientId || patient?.id;
+      
+      // Ensure patient ID is an integer
+      if (patientId) {
+        patientId = parseInt(patientId, 10);
+      }      // Get session token - prefer UserContext sessionToken over localStorage or currentSessionToken
+      const sessionTokenToUse = sessionToken || currentSessionToken || localStorage.getItem("session_token");
+      
+      // Get selected doctor ID from form and convert to integer (using doctor.id which is the user ID)
+      const selectedDoctorId = parseInt(formData.doctor, 10);
+    
+      // Validate required fields
+      if (!patientId || isNaN(patientId)) {
+        console.error("Patient information is required. Please scan a card or ensure patient data is loaded.");
+        return;
+      }      if (!selectedDoctorId || isNaN(selectedDoctorId)) {
+        console.error("Please select a valid doctor for the visit.");
+        return;
+      }      if (!sessionTokenToUse) {
+        console.error("Session token is required. Please ensure NFC session is active.");
+        return;
+      }
+      
+      console.log("Form Data to be sent:", {
+        patient: patientId,
+        attending_doctor: selectedDoctorId,
+        visit_type: formData.reason,
+        reason_for_visit: formData.reason,
+        session_token: sessionTokenToUse
+      });
+      
+      const res = await createVisit({
+        patient: patientId,
+        attending_doctor: selectedDoctorId,
+        visit_type: formData.reason,
+        reason_for_visit: formData.reason,
+        session_token: sessionTokenToUse
+      })
+      
+      if(res){
+      console.log("Patient registered successfully!");
       window.location.href = "/admin/dashboard";
     }
+  } catch (error) {
+    console.error("Error creating visit:", error);
+    if (error.response?.data?.message) {
+      const errorMsg = typeof error.response.data.message === 'object' 
+        ? JSON.stringify(error.response.data.message, null, 2)
+        : error.response.data.message;
+      console.error(`Error creating visit: ${errorMsg}`);
+    } else {
+      console.error("Error creating visit. Please check all required fields and try again.");
+    }
+  }
   };
 
   const filteredPatients = patients.filter(
@@ -209,18 +264,132 @@ export default function HospitalDashboard() {
 
     fetchDoctors();
   }, []);
-  const selectedDoctor = doctors?.find((doc) => doc.id === parseInt(formData.doctor));
+  
+  const selectedDoctor = doctors?.find((doc) => doc.id.toString() === formData.doctor);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      // Check if the user is logged in
-      const token = localStorage.getItem("accesstoken");
-      if (!token) {
-        // Redirect to login page if not logged in
-        window.location.href = "/login";
-      }
+    // Wait for AuthContext to finish loading
+    if (authLoading) {
+      console.log('Patient Registration - AuthContext still loading...');
+      return;
     }
-  }, []);
+    
+    // Check authentication using AuthContext
+    if (!isAuthenticated && !user) {
+      console.warn('User not authenticated, redirecting to login');
+      // Add a small delay to prevent immediate redirect loop
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1000);
+      return;
+    }
+    
+    console.log('Patient Registration - User authenticated:', user);
+  }, [authLoading, isAuthenticated, user]);
+
+  // Sync NFC scanned card ID with form data and auto-fetch patient info
+  useEffect(() => {
+    if (card_id && cardInputMode === "nfc") {
+      console.log('NFC card scanned, updating form data and fetching patient info:', card_id);
+      setFormData(prev => ({
+        ...prev,
+        cardId: card_id
+      }));
+      
+      // Auto-fetch patient data when NFC scan is successful
+      fetchPatientDataByCardId(card_id);
+    }
+  }, [card_id, cardInputMode]);
+
+  // Function to fetch patient data by card ID and auto-fill form
+  const fetchPatientDataByCardId = async (cardId) => {
+    if (!cardId.trim()) return;
+    
+    try {
+      setFetchingPatientData(true);
+      setPatientDataFound(false);
+      
+      console.log('Fetching patient data for card ID:', cardId);
+      
+      // First, perform NFC tap to get session token and patient data
+      const tapResponse = await NfcTap(cardId);
+      console.log("Tap response:", tapResponse);
+      
+      if (tapResponse?.data?.session?.session_token) {
+        // Store session token in context and localStorage
+        const sessionTokenFromTap = tapResponse.data.session.session_token;
+        updateSessionToken(sessionTokenFromTap);
+        localStorage.setItem("session_token", sessionTokenFromTap);
+        setCurrentSessionToken(sessionTokenFromTap);
+        setSessionActive(true);
+        
+        // Store patient data from tap response
+        const patientFromTap = tapResponse.data.session.patient;
+        if (patientFromTap) {
+          setSelectedPatientId(patientFromTap.id);
+        }
+        
+        console.log("Session token and patient data from NFC tap:", {
+          sessionToken: sessionTokenFromTap,
+          patientId: patientFromTap?.id
+        });
+      }
+      
+      // Now get detailed patient information from NFC card details
+      const cardDetails = await adminService.getNfcCardDetails(cardId);
+      console.log('Card details received:', cardDetails);
+      
+      if (cardDetails && cardDetails.patient_profile) {
+        // Auto-fill form with patient data
+        const patientData = cardDetails.patient_profile;
+        
+        // If we didn't get patient ID from tap response, get it from card details
+        if (!selectedPatientId) {
+          setSelectedPatientId(cardDetails.patient || patientData.id);
+        }
+        setFormData(prev => ({
+          ...prev,
+          cardId: cardId,
+          name: patientData.name || patientData.profile?.name || "",
+          email: patientData.email || patientData.profile?.email || "",
+          phone: patientData.phone_number || patientData.profile?.phone_number || "",
+          dateOfBirth: patientData.date_of_birth || patientData.profile?.date_of_birth || "",
+          age: patientData.age || patientData.profile?.age || "",
+          gender: patientData.gender || patientData.profile?.gender || "",
+          bloodGroup: patientData.blood_group || patientData.profile?.blood_group || "",
+          heightCm: patientData.height_cm || patientData.profile?.height_cm || "",
+          weightKg: patientData.weight_kg || patientData.profile?.weight_kg || "",
+          maritalStatus: patientData.marital_status || patientData.profile?.marital_status || "",
+          // Address information if available
+          street: patientData.address?.street || patientData.profile?.address?.street || "",
+          area: patientData.address?.area || patientData.profile?.address?.area || "",
+          city: patientData.address?.city || patientData.profile?.address?.city || "",
+          state: patientData.address?.state || patientData.profile?.address?.state || "",
+          pincode: patientData.address?.pincode || patientData.profile?.address?.pincode || "",
+          country: patientData.address?.country || patientData.profile?.address?.country || "",
+          // Emergency contact if available
+          emergencyContactName: patientData.emergency_contact?.name || patientData.profile?.emergency_contact?.name || "",
+          emergencyContactRelation: patientData.emergency_contact?.relation || patientData.profile?.emergency_contact?.relation || "",
+          emergencyContactPhone: patientData.emergency_contact?.phone || patientData.profile?.emergency_contact?.phone || "",
+          // Insurance if available
+          insuranceProvider: patientData.insurance?.provider || patientData.profile?.insurance?.provider || "",
+          policyNumber: patientData.insurance?.policy_number || patientData.profile?.insurance?.policy_number || ""
+        }));
+        
+        setPatientDataFound(true);
+        console.log('Patient data auto-filled successfully');
+      } else {
+        console.warn('No patient data found for card ID:', cardId);
+        console.log('No patient data found for this card ID. Please verify the card ID or register as a new patient.');
+      }
+      
+    } catch (error) {
+      console.error('Error fetching patient data:', error);
+      console.log('Error fetching patient data. Please check the card ID and try again.');
+    } finally {
+      setFetchingPatientData(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -380,10 +549,10 @@ export default function HospitalDashboard() {
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     >
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
+                      <option key="gender-default" value="">Select Gender</option>
+                      <option key="male" value="Male">Male</option>
+                      <option key="female" value="Female">Female</option>
+                      <option key="other" value="Other">Other</option>
                     </select>
                   </div>
 
@@ -411,15 +580,15 @@ export default function HospitalDashboard() {
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     >
-                      <option value="">Select Blood Group</option>
-                      <option value="A+">A+</option>
-                      <option value="A-">A-</option>
-                      <option value="B+">B+</option>
-                      <option value="B-">B-</option>
-                      <option value="AB+">AB+</option>
-                      <option value="AB-">AB-</option>
-                      <option value="O+">O+</option>
-                      <option value="O-">O-</option>
+                      <option key="blood-default" value="">Select Blood Group</option>
+                      <option key="a-positive" value="A+">A+</option>
+                      <option key="a-negative" value="A-">A-</option>
+                      <option key="b-positive" value="B+">B+</option>
+                      <option key="b-negative" value="B-">B-</option>
+                      <option key="ab-positive" value="AB+">AB+</option>
+                      <option key="ab-negative" value="AB-">AB-</option>
+                      <option key="o-positive" value="O+">O+</option>
+                      <option key="o-negative" value="O-">O-</option>
                     </select>
                   </div>
 
@@ -461,11 +630,11 @@ export default function HospitalDashboard() {
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     >
-                      <option value="">Select Marital Status</option>
-                      <option value="Single">Single</option>
-                      <option value="Married">Married</option>
-                      <option value="Divorced">Divorced</option>
-                      <option value="Widowed">Widowed</option>
+                      <option key="marital-default" value="">Select Marital Status</option>
+                      <option key="single" value="Single">Single</option>
+                      <option key="married" value="Married">Married</option>
+                      <option key="divorced" value="Divorced">Divorced</option>
+                      <option key="widowed" value="Widowed">Widowed</option>
                     </select>
                   </div>
                 </div>
@@ -666,9 +835,9 @@ export default function HospitalDashboard() {
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                         >
-                          <option value="">Choose a doctor</option>
+                          <option key="doctor-default" value="">Choose a doctor</option>
                           {doctors.map((doctor) => (
-                          <option key={doctor.profile.id} value={doctor.profile.id}>
+                          <option key={doctor.profile.id} value={doctor.id}>
                             {doctor.profile.name} 
                           </option>
                           ))}
@@ -701,13 +870,13 @@ export default function HospitalDashboard() {
                           required
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                         >
-                          <option value="">Select visit type</option>
-                          <option value="emergency">Emergency</option>
-                          <option value="outpatient">Outpatient</option>
-                          <option value="inpatient">Inpatient</option>
-                          <option value="followup">Follow-up</option>
-                          <option value="routine_checkup">Routine Checkup</option>
-                          <option value="specialist_consultation">Specialist Consultation</option>
+                          <option key="default" value="">Select visit type</option>
+                          <option key="emergency" value="emergency">Emergency</option>
+                          <option key="outpatient" value="outpatient">Outpatient</option>
+                          <option key="inpatient" value="inpatient">Inpatient</option>
+                          <option key="followup" value="followup">Follow-up</option>
+                          <option key="routine_checkup" value="routine_checkup">Routine Checkup</option>
+                          <option key="specialist_consultation" value="specialist_consultation">Specialist Consultation</option>
                         </select>
                         </div>
                         </div>
@@ -771,8 +940,192 @@ export default function HospitalDashboard() {
           </div>
         </div>
         {/* )} */}
-        <div className="flex flex-col space-y-8  p-6 ">
-          <PatientCheckIn />
+        <div className="flex flex-col space-y-8 p-6">
+          {/* Card ID Input and NFC Scanner Section */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Patient Card ID & NFC Scanner
+            </h3>
+            
+            {/* Card Input Mode Toggle */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Card ID Input Method
+              </label>
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setCardInputMode("manual")}
+                  className={`px-4 py-2 rounded-md border ${
+                    cardInputMode === "manual"
+                      ? "bg-teal-600 text-white border-teal-600"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  Manual Input
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCardInputMode("nfc")}
+                  className={`px-4 py-2 rounded-md border ${
+                    cardInputMode === "nfc"
+                      ? "bg-teal-600 text-white border-teal-600"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  NFC Scan
+                </button>
+              </div>
+            </div>
+
+            {/* Manual Card ID Input */}
+            {cardInputMode === "manual" && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Patient Card ID
+                </label>
+                <div className="flex space-x-3">
+                  <input
+                    type="text"
+                    value={formData.cardId}
+                    onChange={(e) => setFormData(prev => ({ ...prev, cardId: e.target.value }))}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder="Enter patient card ID"
+                  />
+                                    <button
+                    type="button"
+                    onClick={() => fetchPatientDataByCardId(formData.cardId)}
+                    disabled={!formData.cardId.trim() || fetchingPatientData}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {fetchingPatientData ? 'Fetching...' : 'Fetch Patient Data'}
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Enter the patient's card ID to auto-fill patient information
+                </p>
+                {patientDataFound && (
+                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                    <div className="flex items-center">
+                      <svg
+                        className="w-4 h-4 text-green-500 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <p className="text-sm text-green-600 font-medium">
+                        Patient data loaded and form auto-filled successfully!
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {(sessionActive || sessionToken) && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <div className="flex items-center">
+                      <svg
+                        className="w-4 h-4 text-blue-500 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-9a2 2 0 00-2-2H6a2 2 0 00-2 2v9a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <p className="text-sm text-blue-600 font-medium">
+                        NFC Session Active - Ready to create visit
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* NFC Scanner Section */}
+            {cardInputMode === "nfc" && (
+              <div className="mb-6">
+                <div className={`border-2 border-dashed rounded-lg p-6 text-center mb-4 ${
+                  card_id && formData.cardId 
+                    ? 'border-green-300 bg-green-50' 
+                    : 'border-gray-300'
+                }`}>
+                  <div className="flex flex-col items-center">
+                    {card_id && formData.cardId ? (
+                      <>
+                        <svg
+                          className="w-12 h-12 text-green-500 mb-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <p className="text-sm text-green-600 mb-2 font-medium">
+                          Card ID Detected: {formData.cardId}
+                        </p>
+                        <p className="text-xs text-green-500 mb-3">
+                          Patient card successfully scanned and data auto-filled
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, cardId: "" }));
+                          }}
+                          className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                        >
+                          Clear Card ID
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-12 h-12 text-gray-400 mb-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Use the NFC scanner below to read patient card
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Patient data will be auto-filled when card is scanned
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                {/* NFC Scanner Component */}
+                <PatientCheckIn />
+              </div>
+            )}
+          </div>
 
           <div className=" bg-white rounded-lg shadow-lg p-6">
             {/* <div className="bg-white rounded-lg shadow-lg p-6"> */}

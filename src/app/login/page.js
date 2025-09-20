@@ -2,29 +2,74 @@
 
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import AuthLayout from '../../components/AuthLayout';
 
 export default function Login() {
   const { register, handleSubmit, formState: { errors } } = useForm();
-  const { login, error: authError, loading } = useAuth();
+  const { login, error: authError, loading, user, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const onSubmit = async (data) => {
-    await login(data.email, data.password);
+    const success = await login(data.email, data.password);
+    
+    if (success) {
+      // Check if there's a stored redirect URL
+      const redirectUrl = localStorage.getItem('redirectAfterLogin');
+      if (redirectUrl) {
+        localStorage.removeItem('redirectAfterLogin');
+        window.location.href = redirectUrl;
+        return;
+      }
+      
+      // Get user data from localStorage since the context might not be updated yet
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Default route based on user type
+      if (userData.user_type === 'Doctor') {
+        window.location.href = "/doctor";
+      } else if (userData.user_type === 'Patient') {
+        window.location.href = "/dashboard";
+      } else {
+        window.location.href = "/admin/dashboard";
+      }
+    }
   };
 
   useEffect(() => {
-      if(typeof window !== "undefined") {
-          // Check if the user is logged in
-          const token = localStorage.getItem("accesstoken");
-          if (token) {
-              // Redirect to login page if not logged in
-              window.location.href = "/admin/dashboard";
-          }
-      }
+    // Wait for auth context to load before checking authentication
+    if (loading) {
+      console.log('Login page - AuthContext loading...');
+      return;
     }
-    , []);
+    
+    // Check if user is already authenticated
+    if (isAuthenticated && user) {
+      console.log('Login page - User already authenticated, redirecting...', user);
+      
+      // Add a small delay to prevent rapid redirects
+      setTimeout(() => {
+        // Check if there's a stored redirect URL
+        const redirectUrl = localStorage.getItem('redirectAfterLogin');
+        if (redirectUrl) {
+          localStorage.removeItem('redirectAfterLogin');
+          window.location.href = redirectUrl;
+          return;
+        }
+        
+        // Default route based on user type
+        if (user.user_type === 'Doctor') {
+          window.location.href = "/doctor";
+        } else if (user.user_type === 'Patient') {
+          window.location.href = "/dashboard";
+        } else {
+          window.location.href = "/admin/dashboard";
+        }
+      }, 500); // 500ms delay to prevent loops
+    }
+  }, [loading, isAuthenticated, user]);
 
   return (
     <AuthLayout

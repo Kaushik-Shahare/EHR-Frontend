@@ -96,15 +96,8 @@ export const AuthProvider = ({ children }) => {
       setHasProfile(res.hasProfile);
       setLoading(false);
       console.log('User logged in:', res);
-      if (res.user.user_type === 'Doctor') {
-        router.push('/doctor');
-      } else if (res.user.user_type === 'Patient') {
-        router.push('/dashboard');
-      }else{
-        router.push('/admin/dashboard'); // Default redirect
-      }
-      setLoading(false);
-
+      
+      // Don't redirect here - let the login page handle redirects to avoid conflicts
       return true;
     } catch (err) {
       setLoading(false);

@@ -4,20 +4,70 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getPatientVisits, updatePatientVisit } from '@/services/apiService';
 import EditVisitModal from '@/components/admin/EditVisitModal';
+import Cookies from 'js-cookie';
+import authDebug from '@/utils/authDebug';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentVisit, setCurrentVisit] = useState(null);
   const [updateLoading, setUpdateLoading] = useState(false);
+  const [authError, setAuthError] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    // Wait for AuthContext to finish loading
+    if (authLoading) {
+      console.log('Admin Dashboard - AuthContext still loading...');
+      return;
+    }
+    
+    // Debug authentication state
+    const authState = authDebug.checkAuthState();
+    console.log('Admin Dashboard - Auth state:', authState);
+    console.log('Admin Dashboard - AuthContext user:', user);
+    console.log('Admin Dashboard - Is authenticated:', isAuthenticated);
+    
+    setAuthChecked(true);
+    
+    if (!isAuthenticated && !user) {
+      console.warn('User not authenticated, redirecting to login');
+      setAuthError(true);
+      // Add a small delay to prevent immediate redirect loop
+      setTimeout(() => {
+        router.push('/login');
+      }, 1000);
+      return;
+    }
+    
+    // Optional: Check if user is admin
+    if (user && user.user_type && user.user_type !== 'Admin' && user.user_type !== 'Doctor') {
+      console.warn('User is not admin/doctor, redirecting to dashboard');
+      router.push('/dashboard');
+      return;
+    }
+    
+    console.log('Admin Dashboard - Authentication successful');
+  }, [authLoading, isAuthenticated, user, router]);
 
   // Fetching patient data from API
   useEffect(() => {
+    // Don't fetch data until auth is checked and user is authenticated
+    if (!authChecked || authLoading || !isAuthenticated) {
+      return;
+    }
+    
     async function fetchData() {
       try {
         setLoading(true);
+        setAuthError(false);
+        
+        console.log('Admin Dashboard - Fetching patient visits...');
         const response = await getPatientVisits();
         
         // Transform the API data to fit our component's needs
@@ -46,14 +96,20 @@ export default function AdminDashboard() {
         }
       } catch (error) {
         console.error('Error fetching patient visits:', error);
-        // Could add error state handling here
+        
+        // Handle authentication errors
+        if (error.status === 401 || error.requiresAuth) {
+          setAuthError(true);
+          console.warn('Authentication error, redirecting to login');
+          router.push('/login');
+        }
       } finally {
         setLoading(false);
       }
     }
     
     fetchData();
-  }, []);
+  }, [authChecked, authLoading, isAuthenticated]);
 
   // Helper functions to map API data to display values
   const mapVisitTypeToSpecialty = (visitType) => {
@@ -358,10 +414,30 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-semibold text-gray-900">Patient Visit List</h2>
           </div>
           
-          {loading ? (
+          {authLoading || loading || !authChecked ? (
             <div className="p-8 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
-              <p className="mt-2 text-gray-600">Loading patient visits...</p>
+              <p className="mt-2 text-gray-600">
+                {authLoading ? 'Authenticating...' : loading ? 'Loading patient visits...' : 'Initializing...'}
+              </p>
+            </div>
+          ) : authError ? (
+            <div className="p-8 text-center">
+              <div className="mx-auto h-12 w-12 text-red-400 mb-4">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Authentication Required</h3>
+              <p className="mt-1 text-sm text-gray-500">Please log in to access the admin dashboard.</p>
+              <div className="mt-6">
+                <button
+                  onClick={() => router.push('/login')}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700"
+                >
+                  Go to Login
+                </button>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">

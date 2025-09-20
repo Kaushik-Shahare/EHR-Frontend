@@ -1,63 +1,282 @@
 import api from './apiService';
+import Cookies from 'js-cookie';
 
 /**
- * Service for handling patient data and operations
+ * Service for handling patient-specific operations
+ * Covers all patient APIs from the documentation including documents, emergency access, visits, NFC, and access requests
  */
 const patientService = {
+  
+  // Helper function to get auth headers
+  getAuthHeaders() {
+    const token = localStorage.getItem('token') || Cookies.get('token');
+    return {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    };
+  },
+
+  // ===== DOCUMENT MANAGEMENT =====
+  
   /**
-   * Get patient data by ID (for doctors)
+   * Get all documents for the logged-in patient
+   * GET /api/ehr/patient/documents/
+   */
+  async getMyDocuments() {
+    try {
+      const response = await api.get('/api/ehr/patient/documents/', this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Get patient documents error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to fetch documents' };
+    }
+  },
+
+  /**
+   * Upload a new document as patient
+   * POST /api/ehr/patient/documents/
+   */
+  async uploadDocument(formData) {
+    try {
+      const response = await api.post('/api/ehr/patient/documents/', formData, {
+        ...this.getAuthHeaders(),
+        headers: {
+          ...this.getAuthHeaders().headers,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Upload document error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to upload document' };
+    }
+  },
+
+  /**
+   * Delete a patient's document
+   * DELETE /api/ehr/patient/documents/{document_id}/
+   */
+  async deleteDocument(documentId) {
+    try {
+      const response = await api.delete(`/api/ehr/patient/documents/${documentId}/`, this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Delete document error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to delete document' };
+    }
+  },
+
+  // ===== EMERGENCY ACCESS =====
+  
+  /**
+   * Get all emergency-accessible documents
+   * GET /api/ehr/patient/emergency-docs/
+   */
+  async getEmergencyDocuments() {
+    try {
+      const response = await api.get('/api/ehr/patient/emergency-docs/', this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Get emergency documents error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to fetch emergency documents' };
+    }
+  },
+
+  /**
+   * Update multiple documents' emergency access at once
+   * POST /api/ehr/patient/emergency-docs/
+   */
+  async updateMultipleEmergencyDocs(documentIds, isEmergencyAccessible) {
+    try {
+      const response = await api.post('/api/ehr/patient/emergency-docs/', {
+        document_ids: documentIds,
+        is_emergency_accessible: isEmergencyAccessible
+      }, this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Update multiple emergency docs error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to update emergency access' };
+    }
+  },
+
+  /**
+   * Toggle emergency access for a single document
+   * POST /api/ehr/documents/{document_id}/toggle_emergency_access/
+   */
+  async toggleSingleEmergencyDoc(documentId) {
+    try {
+      const response = await api.post(`/api/ehr/documents/${documentId}/toggle_emergency_access/`, {}, this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Toggle emergency doc error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to toggle emergency access' };
+    }
+  },
+
+  /**
+   * Generate emergency access QR code
+   * GET /api/ehr/emergency/generate-qr/
+   */
+  async generateEmergencyQR() {
+    try {
+      const response = await api.get('/api/ehr/emergency/generate-qr/', this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Generate emergency QR error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to generate emergency QR' };
+    }
+  },
+
+  // ===== VISIT MANAGEMENT =====
+  
+  /**
+   * Get all visits for the logged-in patient
+   * GET /api/ehr/patient-visits/
+   */
+  async getMyVisits() {
+    try {
+      const response = await api.get('/api/ehr/patient-visits/', this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Get patient visits error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to fetch visits' };
+    }
+  },
+
+  /**
+   * View details of a specific patient visit
+   * GET /api/ehr/patient-visits/{visit_id}/
+   */
+  async getVisitDetails(visitId) {
+    try {
+      const response = await api.get(`/api/ehr/patient-visits/${visitId}/`, this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Get visit details error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to fetch visit details' };
+    }
+  },
+
+  /**
+   * View all charges for a specific visit
+   * GET /api/ehr/patient-visits/{visit_id}/charges/
+   */
+  async getVisitCharges(visitId) {
+    try {
+      const response = await api.get(`/api/ehr/patient-visits/${visitId}/charges/`, this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Get visit charges error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to fetch visit charges' };
+    }
+  },
+
+  // ===== NFC MANAGEMENT =====
+  
+  /**
+   * Generate QR code for NFC card
+   * GET /api/ehr/nfc/generate-qr/
+   */
+  async generateNfcQR() {
+    try {
+      const response = await api.get('/api/ehr/nfc/generate-qr/', this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Generate NFC QR error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to generate NFC QR' };
+    }
+  },
+
+  /**
+   * View patient's own NFC card
+   * GET /api/ehr/nfc-cards/
+   */
+  async getMyNfcCard() {
+    try {
+      const response = await api.get('/api/ehr/nfc-cards/', this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Get NFC card error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to fetch NFC card' };
+    }
+  },
+
+  /**
+   * View patient's own NFC sessions
+   * GET /api/ehr/nfc-sessions/
+   */
+  async getMySessions() {
+    try {
+      const response = await api.get('/api/ehr/nfc-sessions/', this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Get NFC sessions error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to fetch NFC sessions' };
+    }
+  },
+
+  /**
+   * Invalidate an NFC session (patient can invalidate their own)
+   * POST /api/ehr/nfc-sessions/{session_id}/invalidate/
+   */
+  async invalidateSession(sessionId) {
+    try {
+      const response = await api.post(`/api/ehr/nfc-sessions/${sessionId}/invalidate/`, {}, this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Invalidate session error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to invalidate session' };
+    }
+  },
+
+  // ===== ACCESS MANAGEMENT =====
+  
+  /**
+   * View access requests made to the patient
+   * GET /api/ehr/access-requests/
+   */
+  async getAccessRequests() {
+    try {
+      const response = await api.get('/api/ehr/access-requests/', this.getAuthHeaders());
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Get access requests error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to fetch access requests' };
+    }
+  },
+
+  /**
+   * Approve or reject an access request (Patient)
+   * This would typically be PUT/PATCH /api/ehr/access-requests/{request_id}/
+   */
+  async respondToAccessRequest(requestId, action, reason = null) {
+    try {
+      const response = await api.post(`/api/ehr/access-requests/${requestId}/${action}/`, 
+        reason ? { reason } : {}, 
+        this.getAuthHeaders()
+      );
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Respond to access request error:', error.response?.data || error);
+      throw error.response?.data || { message: `Failed to ${action} access request` };
+    }
+  },
+
+  // ===== BACKWARD COMPATIBILITY (keeping existing methods for components that use them) =====
+  
+  /**
+   * Get a patient by ID with detailed information
    * @param {string} patientId - Patient ID
-   * @returns {Promise<Object>} - Patient data
+   * @returns {Promise<Object>} - Patient data with visits and document count
    */
   async getPatientById(patientId) {
     try {
-      console.log(`patientService: Fetching patient with ID ${patientId}`);
-
-      // First, try the user profile endpoint
-      try {
-        const response = await api.get(`/api/auth/profile/`, {
-          params: { user_id: patientId }
-        });
-        
-        console.log('patientService: Profile response received:', response.data);
-        
-        // Extract patient data based on response format
-        const patientData = response.data.data || response.data;
-        
-        if (patientData && (patientData.id || patientData.user_id)) {
-          console.log('patientService: Valid patient data found');
-          return patientData;
-        } else {
-          console.warn('patientService: Profile endpoint returned data without patient ID');
-        }
-      } catch (profileError) {
-        console.warn('patientService: Profile endpoint failed, trying alternative', profileError);
-      }
+      const response = await api.get(`/api/ehr/patient/${patientId}/`, this.getAuthHeaders());
       
-      // If profile endpoint fails or returns invalid data, try a direct patient endpoint
-      try {
-        const directResponse = await api.get(`/api/ehr/patients/${patientId}/`);
-        console.log('patientService: Direct patient response:', directResponse.data);
-        
-        const directData = directResponse.data.data || directResponse.data;
-        if (directData) {
-          return directData;
-        }
-      } catch (directError) {
-        console.warn('patientService: Direct patient endpoint failed', directError);
-      }
-      
-      // If we still don't have data, create a minimal patient object
-      console.warn('patientService: Could not retrieve full patient data, creating minimal patient object');
-      return {
-        id: patientId,
-        profile: {
-          name: `Patient ${patientId}`,
-        },
-        email: `patient${patientId}@example.com`,
-      };
+      return response.data;
     } catch (error) {
-      console.error(`Error fetching patient ${patientId}:`, error);
+      console.error('Get patient by ID error:', error.response?.data || error);
       throw error.response?.data || { message: 'Failed to fetch patient data' };
     }
   },
@@ -72,45 +291,32 @@ const patientService = {
       // Get patient visits for the doctor
       const response = await api.get('/api/ehr/patient-visits/');
       
-      // The data might be in different formats depending on the backend
-      const visits = response.data.data || response.data || [];
+      // Handle paginated response format: { count, next, previous, results }
+      let visits = [];
+      if (response.data && response.data.results && Array.isArray(response.data.results)) {
+        visits = response.data.results;
+      } else if (Array.isArray(response.data)) {
+        visits = response.data;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        visits = response.data.data;
+      }
       
-      console.log("Patient visits response:", visits);
+      console.log("Patient visits response:", response.data);
+      console.log("Extracted visits array:", visits);
       
-      // Extract unique patients from visits
-      const patientMap = new Map();
+      // Since the visits already contain complete patient information (patient_name, etc.),
+      // we can return the visits directly
+      if (visits.length === 0) {
+        return { results: [], count: 0 };
+      }
       
-      visits.forEach(visit => {
-        // Handle different response structures
-        if (visit.patient && typeof visit.patient === 'object') {
-          // If the response includes complete patient objects
-          patientMap.set(visit.patient.id, visit.patient);
-        } else if (visit.patient && typeof visit.patient === 'number') {
-          // If the response only includes patient IDs
-          if (!patientMap.has(visit.patient)) {
-            patientMap.set(visit.patient, {
-              id: visit.patient,
-              // We'll fetch more details below
-            });
-          }
-        }
-      });
-      
-      // For any patients where we only have IDs, fetch their complete data
-      const patientPromises = Array.from(patientMap.values()).map(async (patient) => {
-        if (!patient.email && !patient.name) {
-          try {
-            return await this.getPatientById(patient.id);
-          } catch (err) {
-            console.error(`Failed to get patient ${patient.id}:`, err);
-            return patient; // Return at least the ID if we can't get full details
-          }
-        }
-        return patient;
-      });
-      
-      const patients = await Promise.all(patientPromises);
-      return patients.filter(patient => patient !== null);
+      // Return the visits in the same format as the API
+      return { 
+        results: visits, 
+        count: response.data.count || visits.length,
+        next: response.data.next || null,
+        previous: response.data.previous || null
+      };
     } catch (error) {
       console.error('Error fetching doctor patients:', error);
       throw error.response?.data || { message: 'Failed to fetch patients' };

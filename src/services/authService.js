@@ -6,13 +6,12 @@ const authService = {
   // Register a new user
   async register(userData) {
     try {
-      const { email, password, firstName, lastName, role } = userData;
+      const { email, password, user_type = 'Patient' } = userData;
       
-      // Always set user_type to 'Patient'
       const requestData = {
         email,
         password,
-        user_type: 'Patient' // Always register as Patient
+        user_type
       };
       
       const response = await api.post('/api/auth/register/', requestData);
@@ -21,6 +20,7 @@ const authService = {
       return {
         success: response.data.status,
         message: response.data.message,
+        data: response.data.data || null
       };
     } catch (error) {
       console.error('Registration error:', error.response?.data || error);
@@ -32,13 +32,14 @@ const authService = {
   async login(email, password) {
     try {
       const response = await api.post('/api/auth/login/', { email, password });
-      console.log("=============================================", response.data)
+      
       // Extract tokens and user data from backend response format
       const { refresh, access, user } = response.data.data;
       
-      // Save tokens
-      localStorage.setItem('accesstoken', response.data.data.access);
-      localStorage.setItem('refreshToken', response.data.data.refresh);
+      // Save tokens to both localStorage and cookies
+      localStorage.setItem('token', access);
+      localStorage.setItem('refreshToken', refresh);
+      Cookies.set('token', access, { expires: 1 });
       
       // Return user data and tokens
       return {
@@ -53,28 +54,38 @@ const authService = {
     }
   },
 
+  // Forgot password
+  async forgotPassword(email) {
+    try {
+      const response = await api.post('/api/auth/forgot-password/', { email });
+      
+      return {
+        success: response.data.status,
+        message: response.data.message,
+        data: response.data.data || null
+      };
+    } catch (error) {
+      console.error('Forgot password error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to send password reset email' };
+    }
+  },
+
   // Load authenticated user's data
   async loadUser() {
     try {
       // Get token from localStorage or cookies
       const token = localStorage.getItem('token') || Cookies.get('token');
       
-      console.log('Token found:', !!token); // Debug if token exists
-      
       if (!token) {
         throw new Error('Authentication token not found');
       }
       
-      console.log('Making API request to /api/auth/profile/');
-      
-      // Try to get user profile with bearer token explicitly included
+      // Try to get user profile with bearer token
       const response = await api.get('/api/auth/profile/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
-      console.log('Profile API response:', response); // Log full response for debugging
       
       // Check if we have data and handle different response formats
       if (!response.data) {
@@ -83,36 +94,22 @@ const authService = {
       
       const userData = response.data.data || response.data;
       
-      console.log('Extracted user data:', userData); // Debug the extracted data
-      
       return {
         user: userData,
         hasProfile: !!userData.profile,
       };
     } catch (error) {
-      // More detailed error logging
-      console.error('Load user error details:', {
-        message: error.message,
-        response: error.response,
-        status: error.response?.status,
-        data: error.response?.data,
-        stack: error.stack
-      });
+      console.error('Load user error:', error.response?.data || error);
       
-      // Throw a more informative error
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         throw {
           message: `Server error: ${error.response.status}`,
           data: error.response.data,
           status: error.response.status
         };
       } else if (error.request) {
-        // The request was made but no response was received
         throw { message: 'No response received from server. Please check your connection.' };
       } else {
-        // Something happened in setting up the request that triggered an Error
         throw { message: `Request error: ${error.message}` };
       }
     }
@@ -121,16 +118,47 @@ const authService = {
   // Logout user
   async logout() {
     try {
-      // Call the logout API endpoint first
-      await api.post('/api/auth/logout/');
+      const token = localStorage.getItem('token') || Cookies.get('token');
+      
+      if (token) {
+        // Call the logout API endpoint with token
+        await api.post('/api/auth/logout/', {}, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Logout API error:', error);
       // Continue with local cleanup even if API logout fails
     }
     
     // Clean up local storage and cookies
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
+    Cookies.remove('token');
+  },
+
+  // Get list of doctors (Admin only)
+  async getDoctors() {
+    try {
+      const token = localStorage.getItem('token') || Cookies.get('token');
+      
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await api.get('/api/auth/doctors/', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error('Get doctors error:', error.response?.data || error);
+      throw error.response?.data || { message: 'Failed to fetch doctors' };
+    }
   }
 };
 
