@@ -106,7 +106,9 @@ export const createVisit = async (data) => {
 
 export const getPatientVisits = async (patientId) => {
   try {
+    console.log('Making API call to fetch patient visits...');
     const response = await api.get(`/api/ehr/patient-visits/`);
+    console.log('Patient visits API response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching patient visits:', {

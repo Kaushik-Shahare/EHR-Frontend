@@ -51,18 +51,18 @@ export default function InsuranceCheckPage() {
           provider: insuranceDetail.provider_name,
           reference_number: insuranceDetail.reference_number,
           status: insuranceDetail.status,
-          status_display: insuranceDetail.status.charAt(0).toUpperCase() + insuranceDetail.status.slice(1),
+          status_display: insuranceDetail.status ? insuranceDetail.status.charAt(0).toUpperCase() + insuranceDetail.status.slice(1) : 'Unknown',
           is_ai_approved: insuranceDetail.is_ai_approved,
           ai_confidence_score: insuranceDetail.ai_confidence_score,
           is_cashless_claim: insuranceDetail.is_cashless_claim,
           provider_type: insuranceDetail.provider_type,
-          provider_type_display: insuranceDetail.provider_type.charAt(0).toUpperCase() + insuranceDetail.provider_type.slice(1),
+          provider_type_display: insuranceDetail.provider_type ? insuranceDetail.provider_type.charAt(0).toUpperCase() + insuranceDetail.provider_type.slice(1) : 'Unknown',
           diagnosis: insuranceDetail.diagnosis,
           icd_code: insuranceDetail.icd_code,
           treatment_type: insuranceDetail.treatment_type,
-          treatment_type_display: insuranceDetail.treatment_type.charAt(0).toUpperCase() + insuranceDetail.treatment_type.slice(1),
+          treatment_type_display: insuranceDetail.treatment_type ? insuranceDetail.treatment_type.charAt(0).toUpperCase() + insuranceDetail.treatment_type.slice(1) : 'Unknown',
           hospitalization_type: insuranceDetail.hospitalization_type,
-          hospitalization_type_display: insuranceDetail.hospitalization_type.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+          hospitalization_type_display: insuranceDetail.hospitalization_type ? insuranceDetail.hospitalization_type.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Unknown',
           admission_date: insuranceDetail.admission_date,
           expected_discharge_date: insuranceDetail.expected_discharge_date,
           expected_days_of_stay: insuranceDetail.expected_days_of_stay,
@@ -149,28 +149,98 @@ export default function InsuranceCheckPage() {
   
   const verifyPolicy = async () => {
     if (!selectedPolicies || !insuranceId) return;
+    
     try {
       setVerifying(true);
+      setVerificationDetails(null);
+      setError(null);
+      
+      console.log('Starting AI verification for insurance ID:', insuranceId);
+      
+      // Start the verification task
       const response = await verifyClaim(insuranceId);
-      if(response.task_id ) {
-        const res = await getResult(insuranceId);
-        if (res) {
-          setVerificationDetails(res);
-          // Update verification result with the verification details
-          setVerificationResult(prev => ({
-            ...prev,
-            verificationStatus: res.status,
-            isApproved: res.is_approved,
-            confidenceScore: res.confidence_score,
-            summary: res.summary
-          }));
-        }
+      console.log('Verification task started:', response);
+      
+      if (response.task_id) {
+        // Implement polling to wait for the task to complete
+        let attempts = 0;
+        const maxAttempts = 40; // 40 attempts * 3 seconds = 2 minutes max
+        const pollInterval = 3000; // 3 seconds
+        
+        const pollForResult = async () => {
+          attempts++;
+          console.log(`Polling attempt ${attempts}/${maxAttempts}`);
+          
+          try {
+            const result = await getResult(insuranceId);
+            console.log('Poll result:', result);
+            
+            if (result && result.status === 'completed') {
+              // Task completed successfully
+              console.log('AI verification completed:', result);
+              setVerificationDetails(result);
+              setVerificationResult(prev => ({
+                ...prev,
+                verificationStatus: result.status,
+                isApproved: result.is_approved,
+                confidenceScore: result.confidence_score,
+                summary: result.summary
+              }));
+              setVerifying(false);
+              return;
+            } else if (result && result.status === 'failed') {
+              // Task failed
+              console.error('AI verification failed:', result);
+              setError('AI verification failed. Please try again.');
+              setVerifying(false);
+              return;
+            } else if (result && (result.status === 'pending' || result.status === 'in_progress')) {
+              // Task still running, continue polling
+              if (attempts < maxAttempts) {
+                console.log('Task still running, polling again in 3 seconds...');
+                setTimeout(pollForResult, pollInterval);
+              } else {
+                // Max attempts reached
+                console.warn('Max polling attempts reached');
+                setError('AI verification is taking longer than expected. Please check back later.');
+                setVerifying(false);
+              }
+            } else {
+              // No result yet or unexpected status
+              if (attempts < maxAttempts) {
+                console.log('No result yet, polling again in 3 seconds...');
+                setTimeout(pollForResult, pollInterval);
+              } else {
+                setError('AI verification timed out. Please try again.');
+                setVerifying(false);
+              }
+            }
+          } catch (pollError) {
+            console.error('Error polling for result:', pollError);
+            if (attempts < maxAttempts) {
+              // Continue polling even if there's an error (might be temporary)
+              setTimeout(pollForResult, pollInterval);
+            } else {
+              setError('Error checking verification status. Please try again.');
+              setVerifying(false);
+            }
+          }
+        };
+        
+        // Start polling after initial delay
+        setTimeout(pollForResult, pollInterval);
+        
+      } else {
+        setError('Failed to start AI verification task.');
+        setVerifying(false);
       }
+      
     } catch (error) {
       console.error('Error verifying claim:', error);
-    } finally {
+      setError('Error starting AI verification. Please try again.');
       setVerifying(false);
-    }}
+    }
+  };
   
   
   return (
@@ -807,7 +877,7 @@ export default function InsuranceCheckPage() {
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                               </svg>
-                              Verifying...
+                              AI Verification in Progress...
                             </>
                           ) : (
                             'Start AI Verification'
