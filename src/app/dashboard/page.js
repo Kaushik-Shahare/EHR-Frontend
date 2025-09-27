@@ -11,6 +11,7 @@ import ehrService from '@/services/ehrService';
 import documentService from '@/services/documentService';
 import nfcService from '@/services/nfcService';
 import patientService from '@/services/patientService';
+import patientService from '@/services/patientService';
 
 export default function Dashboard() {
   const { user, loading, isAuthenticated, hasProfile } = useAuth();
@@ -20,10 +21,9 @@ export default function Dashboard() {
   const [allDocuments, setAllDocuments] = useState([]);
   const [allVisits, setAllVisits] = useState([]);
   const [visitDocuments, setVisitDocuments] = useState({});
-  const [nfcSessions, setNfcSessions] = useState([]);
-  const [emergencyDocs, setEmergencyDocs] = useState([]);
+  const [nfcLogs, setNfcLogs] = useState([]);
   const [loadingRecords, setLoadingRecords] = useState(false);
-  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [loadingNfcLogs, setLoadingNfcLogs] = useState(false);
   const [error, setError] = useState(null);
   
   // Recent data for quick overview (keep backward compatibility)
@@ -80,12 +80,11 @@ export default function Dashboard() {
     
     // If we reach here, user is authenticated, has profile, and should see dashboard
     // For Patient users or other types that should use this dashboard
-    if (userType === 'Patient' || userType === 'Admin' || !userType) {
+    if (userType === 'Patient' || !userType) {
       console.log("Loading dashboard for user type:", userType);
       fetchProfile();
       fetchRecentRecords();
-      fetchNfcSessions();
-      fetchEmergencyDocs();
+      fetchNfcLogs();
     }
   }, [loading, isAuthenticated, hasProfile, user, router]);
 
@@ -192,64 +191,42 @@ export default function Dashboard() {
     }
   };
 
-  const fetchNfcSessions = async () => {
+  const fetchNfcLogs = async () => {
     try {
       if (!user) {
-        console.warn('Cannot fetch NFC sessions: User is null');
-        setLoadingSessions(false);
+        console.warn('Cannot fetch NFC logs: User is null');
+        setLoadingNfcLogs(false);
         return;
       }
 
-      setLoadingSessions(true);
+      setLoadingNfcLogs(true);
       
-      // Fetch NFC sessions for the current user
-      const sessionsResponse = await patientService.getMySessions();
+      // Fetch comprehensive NFC logs for the current user (increase limit)
+      const logsResponse = await nfcService.getNfcLogs(
+        null, // cardId - let it get all cards for this user
+        user.id, // patientId 
+        null, // startDate - get all logs
+        null, // endDate
+        100 // increased limit for comprehensive view
+      );
       
-      console.log("NFC sessions fetched:", sessionsResponse);
+      console.log("NFC logs fetched:", logsResponse);
       
-      // Handle pagination and extract results
-      const sessions = sessionsResponse?.results || sessionsResponse || [];
-      console.log("Processed sessions:", sessions);
-      
-      // Sort sessions by started_at (newest first)
-      const sortedSessions = sessions
-        .sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
+      // Sort logs by timestamp (newest first)
+      const sortedLogs = (logsResponse || [])
+        .sort((a, b) => new Date(b.timestamp || b.created_at) - new Date(a.timestamp || a.created_at));
         
-      setNfcSessions(sortedSessions);
+      setNfcLogs(sortedLogs);
     } catch (error) {
-      console.error('Failed to fetch NFC sessions:', error);
-      // Don't show error for NFC sessions as it's not critical
-      setNfcSessions([]);
+      console.error('Failed to fetch NFC logs:', error);
+      // Don't show error for NFC logs as it's not critical
+      setNfcLogs([]);
     } finally {
-      setLoadingSessions(false);
+      setLoadingNfcLogs(false);
     }
   };
 
-  const fetchEmergencyDocs = async () => {
-    try {
-      if (!user) {
-        console.warn('Cannot fetch emergency documents: User is null');
-        return;
-      }
-      
-      // Fetch emergency accessible documents
-      const emergencyResponse = await documentService.getEmergencyDocuments();
-      
-      console.log("Emergency documents fetched:", emergencyResponse);
-      
-      // Handle response structure
-      const emergencyDocuments = emergencyResponse?.data || emergencyResponse || [];
-      console.log("Processed emergency documents:", emergencyDocuments);
-      
-      setEmergencyDocs(emergencyDocuments);
-    } catch (error) {
-      console.error('Failed to fetch emergency documents:', error);
-      // Don't show error for emergency docs as it's not critical
-      setEmergencyDocs([]);
-    }
-  };
-
-  if (loading || loadingProfile || (loadingRecords && loadingSessions)) {
+  if (loading || loadingProfile || (loadingRecords && loadingNfcLogs)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -916,18 +893,18 @@ export default function Dashboard() {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
-                    NFC Session History ({nfcSessions.length})
+                    NFC Access History ({nfcLogs.length})
                   </h3>
                   <p className="text-purple-700 mt-1">Complete history of NFC card access organized by visit, user, and date</p>
                 </div>
                 
                 <div className="p-6">
-                  {loadingSessions ? (
+                  {loadingNfcLogs ? (
                     <div className="flex flex-col items-center justify-center py-12">
                       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
                       <p className="text-gray-500">Loading NFC session history...</p>
                     </div>
-                  ) : nfcSessions.length === 0 ? (
+                  ) : nfcLogs.length === 0 ? (
                     <div className="text-center py-12">
                       <div className="bg-purple-50 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -939,7 +916,7 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {nfcSessions.map((session, index) => (
+                      {nfcLogs.map((log, index) => (
                         <div key={session.id || index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
                           <div className="flex items-start space-x-4">
                             <div className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${
