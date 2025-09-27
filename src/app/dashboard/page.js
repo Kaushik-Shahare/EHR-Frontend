@@ -10,6 +10,7 @@ import profileService from '@/services/profileService';
 import ehrService from '@/services/ehrService';
 import documentService from '@/services/documentService';
 import nfcService from '@/services/nfcService';
+import patientService from '@/services/patientService';
 
 export default function Dashboard() {
   const { user, loading, isAuthenticated, hasProfile } = useAuth();
@@ -19,9 +20,10 @@ export default function Dashboard() {
   const [allDocuments, setAllDocuments] = useState([]);
   const [allVisits, setAllVisits] = useState([]);
   const [visitDocuments, setVisitDocuments] = useState({});
-  const [nfcLogs, setNfcLogs] = useState([]);
+  const [nfcSessions, setNfcSessions] = useState([]);
+  const [emergencyDocs, setEmergencyDocs] = useState([]);
   const [loadingRecords, setLoadingRecords] = useState(false);
-  const [loadingNfcLogs, setLoadingNfcLogs] = useState(false);
+  const [loadingSessions, setLoadingSessions] = useState(false);
   const [error, setError] = useState(null);
   
   // Recent data for quick overview (keep backward compatibility)
@@ -37,6 +39,10 @@ export default function Dashboard() {
       hasProfile,
       userObject: user
     });
+    
+    // Debug token status
+    const token = localStorage.getItem('token') || document.cookie.includes('token');
+    console.log("Token available:", !!token);
 
     // Wait for loading to complete
     if (loading) {
@@ -78,7 +84,8 @@ export default function Dashboard() {
       console.log("Loading dashboard for user type:", userType);
       fetchProfile();
       fetchRecentRecords();
-      fetchNfcLogs();
+      fetchNfcSessions();
+      fetchEmergencyDocs();
     }
   }, [loading, isAuthenticated, hasProfile, user, router]);
 
@@ -125,10 +132,12 @@ export default function Dashboard() {
         
         // Store all documents
         const allDocs = documentsResponse || [];
+        console.log("Processed documents:", allDocs);
         setAllDocuments(allDocs);
         
-        // Store all visits
-        const allVisitsData = visitsResponse || [];
+        // Store all visits - handle pagination structure
+        const allVisitsData = visitsResponse?.results || visitsResponse || [];
+        console.log("Processed visits:", allVisitsData);
         setAllVisits(allVisitsData);
         
         // Sort documents by upload date (newest first) for recent display
@@ -183,38 +192,60 @@ export default function Dashboard() {
     }
   };
 
-  const fetchNfcLogs = async () => {
+  const fetchNfcSessions = async () => {
     try {
       if (!user) {
-        console.warn('Cannot fetch NFC logs: User is null');
-        setLoadingNfcLogs(false);
+        console.warn('Cannot fetch NFC sessions: User is null');
+        setLoadingSessions(false);
         return;
       }
 
-      setLoadingNfcLogs(true);
+      setLoadingSessions(true);
       
-      // Fetch comprehensive NFC logs for the current user (increase limit)
-      const logsResponse = await nfcService.getNfcLogs(
-        null, // cardId - let it get all cards for this user
-        user.id, // patientId 
-        null, // startDate - get all logs
-        null, // endDate
-        100 // increased limit for comprehensive view
-      );
+      // Fetch NFC sessions for the current user
+      const sessionsResponse = await patientService.getMySessions();
       
-      console.log("NFC logs fetched:", logsResponse);
+      console.log("NFC sessions fetched:", sessionsResponse);
       
-      // Sort logs by timestamp (newest first)
-      const sortedLogs = (logsResponse || [])
-        .sort((a, b) => new Date(b.timestamp || b.created_at) - new Date(a.timestamp || a.created_at));
+      // Handle pagination and extract results
+      const sessions = sessionsResponse?.results || sessionsResponse || [];
+      console.log("Processed sessions:", sessions);
+      
+      // Sort sessions by started_at (newest first)
+      const sortedSessions = sessions
+        .sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
         
-      setNfcLogs(sortedLogs);
+      setNfcSessions(sortedSessions);
     } catch (error) {
-      console.error('Failed to fetch NFC logs:', error);
-      // Don't show error for NFC logs as it's not critical
-      setNfcLogs([]);
+      console.error('Failed to fetch NFC sessions:', error);
+      // Don't show error for NFC sessions as it's not critical
+      setNfcSessions([]);
     } finally {
-      setLoadingNfcLogs(false);
+      setLoadingSessions(false);
+    }
+  };
+
+  const fetchEmergencyDocs = async () => {
+    try {
+      if (!user) {
+        console.warn('Cannot fetch emergency documents: User is null');
+        return;
+      }
+      
+      // Fetch emergency accessible documents
+      const emergencyResponse = await documentService.getEmergencyDocuments();
+      
+      console.log("Emergency documents fetched:", emergencyResponse);
+      
+      // Handle response structure
+      const emergencyDocuments = emergencyResponse?.data || emergencyResponse || [];
+      console.log("Processed emergency documents:", emergencyDocuments);
+      
+      setEmergencyDocs(emergencyDocuments);
+    } catch (error) {
+      console.error('Failed to fetch emergency documents:', error);
+      // Don't show error for emergency docs as it's not critical
+      setEmergencyDocs([]);
     }
   };
 
@@ -266,6 +297,61 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+
+          {/* Debug Information */}
+          <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 text-blue-700 px-6 py-4 rounded-r shadow-sm">
+            <h4 className="font-semibold">Debug Info:</h4>
+            <p>Documents: {allDocuments.length} | Visits: {allVisits.length} | Emergency Docs: {emergencyDocs.length} | Sessions: {nfcSessions.length}</p>
+            <p>Loading: Records={loadingRecords ? 'Yes' : 'No'}, Sessions={loadingSessions ? 'Yes' : 'No'}</p>
+            <p>User: {user?.id || 'No user'} | Authenticated: {isAuthenticated ? 'Yes' : 'No'}</p>
+            <p>Current Token: {localStorage.getItem('token') ? 'Present' : 'Missing'} | Token Length: {localStorage.getItem('token')?.length || 0}</p>
+            <div className="mt-4 space-x-2">
+              <button 
+                onClick={() => fetchRecentRecords()} 
+                className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                disabled={loadingRecords}
+              >
+                Reload Data
+              </button>
+              <button 
+                onClick={() => console.log('Current state:', { allDocuments, allVisits, emergencyDocs, nfcSessions })} 
+                className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
+              >
+                Log State
+              </button>
+              <button 
+                onClick={() => {
+                  const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTQ2OTQ5LCJpYXQiOjE3NTg5NDMzNDksImp0aSI6ImExNjFhZWVlNjliYjQ0NDhhZTQxOGVlNTg3NTk1NzM2IiwidXNlcl9pZCI6M30.WVRVvDfHFYMtpj1uy6BFLvY5ZRTX87QWpQCN9XFGAx8';
+                  localStorage.setItem('token', token);
+                  console.log('Token set, reloading page...');
+                  window.location.reload();
+                }} 
+                className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600"
+              >
+                Set Test Token
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    console.log('Testing API calls...');
+                    const [docs, visits, emergency] = await Promise.all([
+                      documentService.getMyDocuments(),
+                      ehrService.getPatientVisits(),
+                      documentService.getEmergencyDocuments()
+                    ]);
+                    console.log('API Test Results:', { docs, visits, emergency });
+                    alert(`API Test: Docs=${docs?.length || 0}, Visits=${visits?.results?.length || visits?.length || 0}, Emergency=${emergency?.length || 0}`);
+                  } catch (error) {
+                    console.error('API Test Error:', error);
+                    alert('API Test Failed: ' + error.message);
+                  }
+                }} 
+                className="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600"
+              >
+                Test APIs
+              </button>
+            </div>
+          </div>
           
           <div className="bg-white shadow-xl sm:rounded-xl p-8 border border-gray-100">
             <div className="flex items-center mb-8">
@@ -652,6 +738,76 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Emergency Documents Section */}
+              <div className="bg-white rounded-xl shadow-lg border border-gray-100">
+                <div className="bg-gradient-to-r from-red-50 to-orange-50 p-6 border-b border-red-100">
+                  <h3 className="text-xl font-bold text-red-900 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    Emergency Access Documents ({emergencyDocs.length})
+                  </h3>
+                  <p className="text-red-700 mt-1">Documents marked for emergency access by medical professionals</p>
+                </div>
+                
+                <div className="p-6">
+                  {emergencyDocs.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="bg-red-50 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                      <h4 className="text-xl font-semibold text-gray-800 mb-2">No Emergency Documents</h4>
+                      <p className="text-gray-500">No documents are currently marked for emergency access</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {emergencyDocs.map((doc) => (
+                        <div key={doc.id} className="border border-red-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 bg-red-50">
+                          <div className="flex items-start space-x-3">
+                            <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </div>
+                            <div className="flex-grow min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-semibold text-gray-900 truncate">{doc.document_type || 'Emergency Document'}</h4>
+                                <div className="flex items-center space-x-2">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Emergency
+                                  </span>
+                                  <a 
+                                    href={doc.file} 
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white p-1.5 rounded-md transition-colors duration-200 flex-shrink-0"
+                                    title="Open document"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                      <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                                      <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                                    </svg>
+                                  </a>
+                                </div>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">{doc.description || 'No description available'}</p>
+                              <div className="flex items-center justify-between text-xs text-gray-500">
+                                <span>{formatDate(doc.uploaded_at)}</span>
+                                {doc.is_approved && (
+                                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Approved</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* All Visits with Documents Section */}
               <div className="bg-white rounded-xl shadow-lg border border-gray-100">
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-green-100">
@@ -801,59 +957,48 @@ export default function Dashboard() {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
-                    NFC Access History ({nfcLogs.length})
+                    NFC Session History ({nfcSessions.length})
                   </h3>
                   <p className="text-purple-700 mt-1">Complete history of NFC card access organized by visit, user, and date</p>
                 </div>
                 
                 <div className="p-6">
-                  {loadingNfcLogs ? (
+                  {loadingSessions ? (
                     <div className="flex flex-col items-center justify-center py-12">
                       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
-                      <p className="text-gray-500">Loading NFC access history...</p>
+                      <p className="text-gray-500">Loading NFC session history...</p>
                     </div>
-                  ) : nfcLogs.length === 0 ? (
+                  ) : nfcSessions.length === 0 ? (
                     <div className="text-center py-12">
                       <div className="bg-purple-50 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                       </div>
-                      <h4 className="text-xl font-semibold text-gray-800 mb-2">No NFC Activity Yet</h4>
-                      <p className="text-gray-500">NFC card usage history will appear here once you start using your medical card</p>
+                      <h4 className="text-xl font-semibold text-gray-800 mb-2">No NFC Sessions Yet</h4>
+                      <p className="text-gray-500">NFC session history will appear here once you start using your medical card for access</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {nfcLogs.map((log, index) => (
-                        <div key={log.id || index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
+                      {nfcSessions.map((session, index) => (
+                        <div key={session.id || index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
                           <div className="flex items-start space-x-4">
                             <div className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                              log.action_type === 'tap' ? 'bg-green-100 text-green-600' : 
-                              log.action_type === 'session_start' ? 'bg-blue-100 text-blue-600' :
-                              log.action_type === 'session_end' ? 'bg-gray-100 text-gray-600' :
-                              log.action_type === 'access_granted' ? 'bg-emerald-100 text-emerald-600' :
-                              log.action_type === 'access_denied' ? 'bg-red-100 text-red-600' :
-                              'bg-purple-100 text-purple-600'
+                              session.is_active ? 'bg-green-100 text-green-600' : 
+                              session.valid ? 'bg-blue-100 text-blue-600' :
+                              'bg-gray-100 text-gray-600'
                             }`}>
-                              {log.action_type === 'tap' ? (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
-                              ) : log.action_type === 'session_start' ? (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.01M15 10h1.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              ) : log.action_type === 'access_granted' ? (
+                              {session.is_active ? (
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                              ) : log.action_type === 'access_denied' ? (
+                              ) : session.valid ? (
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
                               ) : (
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                               )}
                             </div>
@@ -862,65 +1007,62 @@ export default function Dashboard() {
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2">
                                   <h4 className="text-sm font-semibold text-gray-900">
-                                    {log.action_type === 'tap' ? 'NFC Card Tap' :
-                                     log.action_type === 'session_start' ? 'Session Started' :
-                                     log.action_type === 'session_end' ? 'Session Ended' :
-                                     log.action_type === 'access_granted' ? 'Access Granted' :
-                                     log.action_type === 'access_denied' ? 'Access Denied' :
-                                     log.action_type || 'NFC Activity'}
+                                    {session.session_type === 'doctor' ? 'Doctor Access Session' :
+                                     session.session_type === 'emergency' ? 'Emergency Access Session' :
+                                     `${session.session_type || 'NFC'} Session`}
                                   </h4>
-                                  {log.visit_id && (
+                                  {session.visit && (
                                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                      Visit #{log.visit_id}
+                                      Visit #{session.visit}
                                     </span>
                                   )}
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    session.is_active ? 'bg-green-100 text-green-800' :
+                                    session.valid ? 'bg-blue-100 text-blue-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {session.is_active ? 'Active' : session.valid ? 'Valid' : 'Expired'}
+                                  </span>
                                 </div>
                                 <span className="text-xs text-gray-500">
-                                  {formatDate(log.timestamp || log.created_at)}
+                                  {formatDate(session.started_at)}
                                 </span>
                               </div>
                               
                               <div className="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs text-gray-600">
-                                {log.card_id && (
-                                  <div className="flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                                    </svg>
-                                    <span>Card: {log.card_id.substring(0, 8)}...</span>
-                                  </div>
-                                )}
-                                {log.accessed_by && (
+                                {session.accessed_by && (
                                   <div className="flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
-                                    <span>By: {log.accessed_by.name || log.accessed_by.email || 'Unknown User'}</span>
+                                    <span>Accessed by: {session.accessed_by.profile?.name || session.accessed_by.email || 'Unknown User'}</span>
                                   </div>
                                 )}
-                                {log.location && (
+                                {session.expires_at && (
                                   <div className="flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span>Location: {log.location}</span>
+                                    <span>Expires: {formatDate(session.expires_at)}</span>
                                   </div>
                                 )}
-                                {log.purpose && (
+                                {session.session_token && (
+                                  <div className="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                    </svg>
+                                    <span>Token: {session.session_token.substring(0, 8)}...</span>
+                                  </div>
+                                )}
+                                {session.patient && (
                                   <div className="flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
-                                    <span>Purpose: {log.purpose}</span>
+                                    <span>Patient: {session.patient.profile?.name || 'Patient Data'}</span>
                                   </div>
                                 )}
                               </div>
-                              
-                              {log.details && (
-                                <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
-                                  <strong>Details:</strong> {log.details}
-                                </div>
-                              )}
                             </div>
                           </div>
                         </div>

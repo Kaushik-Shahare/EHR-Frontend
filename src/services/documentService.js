@@ -11,7 +11,9 @@ const documentService = {
   async getMyDocuments() {
     try {
       const response = await api.get('/api/ehr/patient/documents/');
-      return response.data.data || [];
+      console.log('Documents API Response:', response.data);
+      // Handle both possible response structures
+      return response.data.data || response.data || [];
     } catch (error) {
       console.error('Error fetching documents:', error);
       throw error.response?.data || { message: 'Failed to fetch documents' };
@@ -146,7 +148,9 @@ const documentService = {
   async getEmergencyDocuments() {
     try {
       const response = await api.get('/api/ehr/patient/emergency-docs/');
-      return response.data.data || [];
+      console.log('Emergency Docs API Response:', response.data);
+      // Handle both possible response structures
+      return response.data.data || response.data || [];
     } catch (error) {
       console.error('Error fetching emergency documents:', error);
       throw error.response?.data || { message: 'Failed to fetch emergency documents' };

@@ -21,9 +21,10 @@ const ehrService = {
    */
   async getPatientVisits() {
     try {
-      const response = await apiService.get('/api/ehr/patient-visits/');
+      const response = await api.get('/api/ehr/patient-visits/');
       console.log('✅ Patient visits loaded:', response.data);
-      return response.data;
+      // Handle both possible response structures for visits
+      return response.data.data || response.data;
     } catch (error) {
       console.error('❌ Error loading patient visits:', error);
       throw error;
@@ -32,7 +33,7 @@ const ehrService = {
 
   async getVisitDocuments(visitId) {
     try {
-      const response = await apiService.get(`/api/ehr/patient-visits/${visitId}/documents/`);
+      const response = await api.get(`/api/ehr/patient-visits/${visitId}/documents/`);
       console.log('✅ Visit documents loaded:', response.data);
       return response.data;
     } catch (error) {

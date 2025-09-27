@@ -209,6 +209,7 @@ const patientService = {
   async getMySessions() {
     try {
       const response = await api.get('/api/ehr/nfc-sessions/', this.getAuthHeaders());
+      console.log('NFC Sessions API Response:', response.data);
       return response.data.data || response.data;
     } catch (error) {
       console.error('Get NFC sessions error:', error.response?.data || error);
