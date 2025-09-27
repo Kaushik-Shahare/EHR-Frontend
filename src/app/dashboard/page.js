@@ -298,60 +298,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Debug Information */}
-          <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 text-blue-700 px-6 py-4 rounded-r shadow-sm">
-            <h4 className="font-semibold">Debug Info:</h4>
-            <p>Documents: {allDocuments.length} | Visits: {allVisits.length} | Emergency Docs: {emergencyDocs.length} | Sessions: {nfcSessions.length}</p>
-            <p>Loading: Records={loadingRecords ? 'Yes' : 'No'}, Sessions={loadingSessions ? 'Yes' : 'No'}</p>
-            <p>User: {user?.id || 'No user'} | Authenticated: {isAuthenticated ? 'Yes' : 'No'}</p>
-            <p>Current Token: {localStorage.getItem('token') ? 'Present' : 'Missing'} | Token Length: {localStorage.getItem('token')?.length || 0}</p>
-            <div className="mt-4 space-x-2">
-              <button 
-                onClick={() => fetchRecentRecords()} 
-                className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
-                disabled={loadingRecords}
-              >
-                Reload Data
-              </button>
-              <button 
-                onClick={() => console.log('Current state:', { allDocuments, allVisits, emergencyDocs, nfcSessions })} 
-                className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
-              >
-                Log State
-              </button>
-              <button 
-                onClick={() => {
-                  const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzU4OTQ2OTQ5LCJpYXQiOjE3NTg5NDMzNDksImp0aSI6ImExNjFhZWVlNjliYjQ0NDhhZTQxOGVlNTg3NTk1NzM2IiwidXNlcl9pZCI6M30.WVRVvDfHFYMtpj1uy6BFLvY5ZRTX87QWpQCN9XFGAx8';
-                  localStorage.setItem('token', token);
-                  console.log('Token set, reloading page...');
-                  window.location.reload();
-                }} 
-                className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600"
-              >
-                Set Test Token
-              </button>
-              <button 
-                onClick={async () => {
-                  try {
-                    console.log('Testing API calls...');
-                    const [docs, visits, emergency] = await Promise.all([
-                      documentService.getMyDocuments(),
-                      ehrService.getPatientVisits(),
-                      documentService.getEmergencyDocuments()
-                    ]);
-                    console.log('API Test Results:', { docs, visits, emergency });
-                    alert(`API Test: Docs=${docs?.length || 0}, Visits=${visits?.results?.length || visits?.length || 0}, Emergency=${emergency?.length || 0}`);
-                  } catch (error) {
-                    console.error('API Test Error:', error);
-                    alert('API Test Failed: ' + error.message);
-                  }
-                }} 
-                className="bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600"
-              >
-                Test APIs
-              </button>
-            </div>
-          </div>
           
           <div className="bg-white shadow-xl sm:rounded-xl p-8 border border-gray-100">
             <div className="flex items-center mb-8">
