@@ -249,7 +249,7 @@ export default function Dashboard() {
     }
   };
 
-  if (loading || loadingProfile || (loadingRecords && loadingNfcLogs)) {
+  if (loading || loadingProfile || (loadingRecords && loadingSessions)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -811,13 +811,26 @@ export default function Dashboard() {
               {/* All Visits with Documents Section */}
               <div className="bg-white rounded-xl shadow-lg border border-gray-100">
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-green-100">
-                  <h3 className="text-xl font-bold text-green-900 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
-                    All Medical Visits ({allVisits.length})
-                  </h3>
-                  <p className="text-green-700 mt-1">Complete history of your medical visits with attached documents</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold text-green-900 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        All Medical Visits ({allVisits.length})
+                      </h3>
+                      <p className="text-green-700 mt-1">Complete history of your medical visits with attached documents</p>
+                    </div>
+                    <Link 
+                      href="/visits"
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center"
+                    >
+                      View All Visits
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </Link>
+                  </div>
                 </div>
                 
                 <div className="p-6">

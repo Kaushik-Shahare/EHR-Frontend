@@ -48,10 +48,11 @@ const ehrService = {
    */
   async getVisitDetails(visitId) {
     try {
-      const response = await api.get(`/api/ehr/visits/${visitId}/`, this.getAuthHeaders());
+      const response = await api.get(`/api/ehr/patient-visits/${visitId}/`);
+      console.log('✅ Visit details loaded:', response.data);
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Get visit details error:', error.response?.data || error);
+      console.error('❌ Error loading visit details:', error.response?.data || error);
       throw error.response?.data || { message: 'Failed to fetch visit details' };
     }
   },
@@ -104,10 +105,11 @@ const ehrService = {
    */
   async getVisitVitalSigns(visitId) {
     try {
-      const response = await api.get(`/api/ehr/visits/${visitId}/vitals/`, this.getAuthHeaders());
+      const response = await api.get(`/api/ehr/visits/${visitId}/vitals/`);
+      console.log('✅ Visit vital signs loaded:', response.data);
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Get visit vital signs error:', error.response?.data || error);
+      console.error('❌ Error loading visit vital signs:', error.response?.data || error);
       throw error.response?.data || { message: 'Failed to fetch vital signs' };
     }
   },
@@ -132,10 +134,11 @@ const ehrService = {
    */
   async getVisitDiagnoses(visitId) {
     try {
-      const response = await api.get(`/api/ehr/visits/${visitId}/diagnoses/`, this.getAuthHeaders());
+      const response = await api.get(`/api/ehr/visits/${visitId}/diagnoses/`);
+      console.log('✅ Visit diagnoses loaded:', response.data);
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Get visit diagnoses error:', error.response?.data || error);
+      console.error('❌ Error loading visit diagnoses:', error.response?.data || error);
       throw error.response?.data || { message: 'Failed to fetch diagnoses' };
     }
   },
@@ -160,10 +163,11 @@ const ehrService = {
    */
   async getVisitPrescriptions(visitId) {
     try {
-      const response = await api.get(`/api/ehr/visits/${visitId}/prescriptions/`, this.getAuthHeaders());
+      const response = await api.get(`/api/ehr/visits/${visitId}/prescriptions/`);
+      console.log('✅ Visit prescriptions loaded:', response.data);
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Get visit prescriptions error:', error.response?.data || error);
+      console.error('❌ Error loading visit prescriptions:', error.response?.data || error);
       throw error.response?.data || { message: 'Failed to fetch prescriptions' };
     }
   },
