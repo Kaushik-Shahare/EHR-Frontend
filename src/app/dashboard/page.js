@@ -11,7 +11,6 @@ import ehrService from '@/services/ehrService';
 import documentService from '@/services/documentService';
 import nfcService from '@/services/nfcService';
 import patientService from '@/services/patientService';
-import patientService from '@/services/patientService';
 
 export default function Dashboard() {
   const { user, loading, isAuthenticated, hasProfile } = useAuth();
@@ -201,25 +200,23 @@ export default function Dashboard() {
 
       setLoadingNfcLogs(true);
       
-      // Fetch comprehensive NFC logs for the current user (increase limit)
-      const logsResponse = await nfcService.getNfcLogs(
-        null, // cardId - let it get all cards for this user
-        user.id, // patientId 
-        null, // startDate - get all logs
-        null, // endDate
-        100 // increased limit for comprehensive view
-      );
+      // Fetch NFC sessions for the current user using patientService
+      const sessionsResponse = await patientService.getMySessions();
       
-      console.log("NFC logs fetched:", logsResponse);
+      console.log("NFC sessions fetched:", sessionsResponse);
       
-      // Sort logs by timestamp (newest first)
-      const sortedLogs = (logsResponse || [])
-        .sort((a, b) => new Date(b.timestamp || b.created_at) - new Date(a.timestamp || a.created_at));
+      // Handle pagination and extract results
+      const sessions = sessionsResponse?.results || sessionsResponse || [];
+      console.log("Processed sessions:", sessions);
+      
+      // Sort sessions by started_at (newest first)
+      const sortedSessions = sessions
+        .sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
         
-      setNfcLogs(sortedLogs);
+      setNfcLogs(sortedSessions);
     } catch (error) {
-      console.error('Failed to fetch NFC logs:', error);
-      // Don't show error for NFC logs as it's not critical
+      console.error('Failed to fetch NFC sessions:', error);
+      // Don't show error for NFC sessions as it's not critical
       setNfcLogs([]);
     } finally {
       setLoadingNfcLogs(false);
@@ -661,76 +658,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Emergency Documents Section */}
-              <div className="bg-white rounded-xl shadow-lg border border-gray-100">
-                <div className="bg-gradient-to-r from-red-50 to-orange-50 p-6 border-b border-red-100">
-                  <h3 className="text-xl font-bold text-red-900 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    Emergency Access Documents ({emergencyDocs.length})
-                  </h3>
-                  <p className="text-red-700 mt-1">Documents marked for emergency access by medical professionals</p>
-                </div>
-                
-                <div className="p-6">
-                  {emergencyDocs.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="bg-red-50 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                      </div>
-                      <h4 className="text-xl font-semibold text-gray-800 mb-2">No Emergency Documents</h4>
-                      <p className="text-gray-500">No documents are currently marked for emergency access</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {emergencyDocs.map((doc) => (
-                        <div key={doc.id} className="border border-red-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 bg-red-50">
-                          <div className="flex items-start space-x-3">
-                            <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                            </div>
-                            <div className="flex-grow min-w-0">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-semibold text-gray-900 truncate">{doc.document_type || 'Emergency Document'}</h4>
-                                <div className="flex items-center space-x-2">
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                    Emergency
-                                  </span>
-                                  <a 
-                                    href={doc.file} 
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white p-1.5 rounded-md transition-colors duration-200 flex-shrink-0"
-                                    title="Open document"
-                                  >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                      <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
-                                      <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
-                                    </svg>
-                                  </a>
-                                </div>
-                              </div>
-                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">{doc.description || 'No description available'}</p>
-                              <div className="flex items-center justify-between text-xs text-gray-500">
-                                <span>{formatDate(doc.uploaded_at)}</span>
-                                {doc.is_approved && (
-                                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Approved</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* All Visits with Documents Section */}
               <div className="bg-white rounded-xl shadow-lg border border-gray-100">
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-green-100">
@@ -916,7 +843,7 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {nfcLogs.map((log, index) => (
+                      {nfcLogs.map((session, index) => (
                         <div key={session.id || index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
                           <div className="flex items-start space-x-4">
                             <div className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -985,7 +912,7 @@ export default function Dashboard() {
                                 {session.session_token && (
                                   <div className="flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z" />
                                     </svg>
                                     <span>Token: {session.session_token.substring(0, 8)}...</span>
                                   </div>
