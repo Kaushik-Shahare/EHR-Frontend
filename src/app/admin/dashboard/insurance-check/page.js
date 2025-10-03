@@ -554,7 +554,7 @@ export default function InsuranceCheckPage() {
                             
                             <div>
                               <span className="block text-xs text-gray-500">ICD Code</span>
-                              <span className={`block font-medium ${verificationDetails && verificationDetails.diagnostic_verification && !verificationDetails.diagnostic_verification.verification_result.icd_code_appropriate ? 'text-red-600' : ''}`}>
+                              <span className={`block font-medium ${verificationDetails && verificationDetails.diagnostic_verification && !verificationDetails.diagnostic_verification?.verification_result?.icd_code_appropriate ? 'text-red-600' : ''}`}>
                                 {verificationResult.data.icd_code || 'Not specified'}
                               </span>
                             </div>
@@ -580,14 +580,14 @@ export default function InsuranceCheckPage() {
                                 <span className="block text-xs text-gray-500">Treating Doctor</span>
                                 {verificationDetails && verificationDetails.fraud_detection && (
                                   <span className={`ml-2 h-3 w-3 rounded-full ${
-                                    verificationDetails.fraud_detection.verification_result.fraud_risk_level === 'low' ? 'bg-green-500' : 'bg-red-500'
+                                    verificationDetails.fraud_detection?.verification_result?.fraud_risk_level === 'low' ? 'bg-green-500' : 'bg-red-500'
                                   }`}></span>
                                 )}
                               </div>
                               <span className="block font-medium">{verificationResult.data.treating_doctor || 'N/A'}</span>
                               {verificationDetails && verificationDetails.fraud_detection && (
                                 <div className="absolute z-10 invisible group-hover:visible bg-white border border-gray-200 p-3 rounded shadow-lg w-64 mt-1">
-                                  <h5 className="text-xs font-bold">Fraud Risk: {verificationDetails.fraud_detection.verification_result.fraud_risk_level}</h5>
+                                  <h5 className="text-xs font-bold">Fraud Risk: {verificationDetails.fraud_detection?.verification_result?.fraud_risk_level || 'Unknown'}</h5>
                                   <p className="text-xs text-gray-700 mt-1">{verificationDetails.fraud_detection.notes}</p>
                                 </div>
                               )}
@@ -599,7 +599,7 @@ export default function InsuranceCheckPage() {
                                 <span className="block text-xs text-gray-500">Past Medical History</span>
                                 {verificationDetails && verificationDetails.fraud_detection && (
                                   <span className={`ml-2 h-3 w-3 rounded-full ${
-                                    !verificationDetails.fraud_detection.verification_result.no_inconsistencies_detected ? 'bg-red-500' : 'bg-green-500'
+                                    !verificationDetails.fraud_detection?.verification_result?.no_inconsistencies_detected ? 'bg-red-500' : 'bg-green-500'
                                   }`}></span>
                                 )}
                               </div>
@@ -607,7 +607,7 @@ export default function InsuranceCheckPage() {
                               {verificationDetails && verificationDetails.fraud_detection && (
                                 <div className="absolute z-10 invisible group-hover:visible bg-white border border-gray-200 p-3 rounded shadow-lg w-64 mt-1">
                                   <p className="text-xs text-gray-700">
-                                    {verificationDetails.fraud_detection.verification_result.no_inconsistencies_detected ? 
+                                    {verificationDetails.fraud_detection?.verification_result?.no_inconsistencies_detected ? 
                                       'No inconsistencies detected in medical history.' : 
                                       'Inconsistencies detected in medical history. Review required.'}
                                   </p>
@@ -655,7 +655,7 @@ export default function InsuranceCheckPage() {
                                   <span className="block text-xs text-gray-500">Claim Amount</span>
                                   {verificationDetails && verificationDetails.billing_verification && (
                                     <span className={`ml-2 h-3 w-3 rounded-full ${
-                                      verificationDetails.billing_verification.verification_result.charges_reasonable ? 'bg-green-500' : 'bg-red-500'
+                                      verificationDetails.billing_verification?.verification_result?.charges_reasonable ? 'bg-green-500' : 'bg-red-500'
                                     }`}></span>
                                   )}
                                 </div>
@@ -663,11 +663,11 @@ export default function InsuranceCheckPage() {
                                 {verificationDetails && verificationDetails.billing_verification && (
                                   <div className="absolute z-10 invisible group-hover:visible bg-white border border-gray-200 p-3 rounded shadow-lg w-64 mt-1">
                                     <p className="text-xs text-gray-700">
-                                      {verificationDetails.billing_verification.verification_result.charges_reasonable ? 
+                                      {verificationDetails.billing_verification?.verification_result?.charges_reasonable ? 
                                         'Charges appear reasonable for the services provided.' : 
                                         'Charges appear unreasonable or excessive for the services provided.'}
                                     </p>
-                                    {verificationDetails.billing_verification.verification_result.total_matches_itemized && (
+                                    {verificationDetails.billing_verification?.verification_result?.total_matches_itemized && (
                                       <p className="text-xs text-green-700 mt-1">Total matches itemized charges.</p>
                                     )}
                                   </div>
@@ -686,7 +686,7 @@ export default function InsuranceCheckPage() {
                                   <span className="block text-xs text-gray-500">Professional Fees</span>
                                   {verificationDetails && verificationDetails.billing_verification && (
                                     <span className={`ml-2 h-3 w-3 rounded-full ${
-                                      verificationDetails.billing_verification.verification_result.services_medically_necessary ? 'bg-green-500' : 'bg-red-500'
+                                      verificationDetails.billing_verification?.verification_result?.services_medically_necessary ? 'bg-green-500' : 'bg-red-500'
                                     }`}></span>
                                   )}
                                 </div>
@@ -694,7 +694,7 @@ export default function InsuranceCheckPage() {
                                 {verificationDetails && verificationDetails.billing_verification && (
                                   <div className="absolute z-10 invisible group-hover:visible bg-white border border-gray-200 p-3 rounded shadow-lg w-64 mt-1">
                                     <p className="text-xs text-gray-700">
-                                      {verificationDetails.billing_verification.verification_result.services_medically_necessary ? 
+                                      {verificationDetails.billing_verification?.verification_result?.services_medically_necessary ? 
                                         'Professional services appear medically necessary.' : 
                                         'Professional services may not be medically necessary based on diagnosis and treatment plan.'}
                                     </p>
@@ -796,15 +796,15 @@ export default function InsuranceCheckPage() {
                                   </div>
                                   <ul className="mt-2 space-y-1">
                                     <li className="flex items-center text-xs">
-                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.eligibility_verification.verification_result.policy_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.eligibility_verification?.verification_result?.policy_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                       Policy Active
                                     </li>
                                     <li className="flex items-center text-xs">
-                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.eligibility_verification.verification_result.waiting_period_satisfied ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.eligibility_verification?.verification_result?.waiting_period_satisfied ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                       Waiting Period Satisfied
                                     </li>
                                     <li className="flex items-center text-xs">
-                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.eligibility_verification.verification_result.preauth_requirements_met ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.eligibility_verification?.verification_result?.preauth_requirements_met ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                       Pre-authorization Requirements
                                     </li>
                                   </ul>
@@ -822,11 +822,11 @@ export default function InsuranceCheckPage() {
                                   </div>
                                   <ul className="mt-2 space-y-1">
                                     <li className="flex items-center text-xs">
-                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.diagnostic_verification.verification_result.icd_code_appropriate ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.diagnostic_verification?.verification_result?.icd_code_appropriate ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                       ICD Code Appropriate
                                     </li>
                                     <li className="flex items-center text-xs">
-                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.diagnostic_verification.verification_result.sufficient_medical_evidence ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.diagnostic_verification?.verification_result?.sufficient_medical_evidence ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                       Sufficient Medical Evidence
                                     </li>
                                   </ul>
@@ -837,21 +837,22 @@ export default function InsuranceCheckPage() {
                                   <div className="flex justify-between items-center">
                                     <h5 className="text-sm font-semibold">Fraud Detection</h5>
                                     <span className={`px-2 py-1 rounded-md text-xs font-medium ${
-                                      verificationDetails.fraud_detection.verification_result.fraud_risk_level === 'low' ? 'bg-green-100 text-green-800' : 
-                                      verificationDetails.fraud_detection.verification_result.fraud_risk_level === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
+                                      verificationDetails.fraud_detection?.verification_result?.fraud_risk_level === 'low' ? 'bg-green-100 text-green-800' : 
+                                      verificationDetails.fraud_detection?.verification_result?.fraud_risk_level === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
                                       'bg-red-100 text-red-800'
                                     }`}>
-                                      {verificationDetails.fraud_detection.verification_result.fraud_risk_level.charAt(0).toUpperCase() + 
-                                       verificationDetails.fraud_detection.verification_result.fraud_risk_level.slice(1)} Risk
+                                      {verificationDetails.fraud_detection?.verification_result?.fraud_risk_level ? 
+                                        (verificationDetails.fraud_detection.verification_result.fraud_risk_level.charAt(0).toUpperCase() + 
+                                         verificationDetails.fraud_detection.verification_result.fraud_risk_level.slice(1)) : 'Unknown'} Risk
                                     </span>
                                   </div>
                                   <ul className="mt-2 space-y-1">
                                     <li className="flex items-center text-xs">
-                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.fraud_detection.verification_result.no_inconsistencies_detected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.fraud_detection?.verification_result?.no_inconsistencies_detected ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                       No Inconsistencies
                                     </li>
                                     <li className="flex items-center text-xs">
-                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.fraud_detection.verification_result.no_suspicious_patterns ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                      <span className={`h-2 w-2 rounded-full mr-2 ${verificationDetails.fraud_detection?.verification_result?.no_suspicious_patterns ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                       No Suspicious Patterns
                                     </li>
                                   </ul>
